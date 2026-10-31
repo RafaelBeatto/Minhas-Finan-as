@@ -15,18 +15,11 @@ import {
 import { useSelector, useDispatch } from 'src/store/Store';
 import { toggleMobileSidebar, setDarkMode } from 'src/store/customizer/CustomizerSlice';
 import { IconMenu2, IconMoon, IconSun } from '@tabler/icons-react';
-import Notifications from 'src/layouts/full/vertical/header/Notification';
-import Cart from 'src/layouts/full/vertical/header/Cart';
-import Profile from 'src/layouts/full/vertical/header/Profile';
-import Search from 'src/layouts/full/vertical/header/Search';
-import Language from 'src/layouts/full/vertical/header/Language';
-import Navigation from 'src/layouts/full/vertical/header/Navigation';
 import Logo from 'src/layouts/full/shared/logo/Logo';
 import { AppState } from 'src/store/Store';
 
 const Header = () => {
   const lgDown = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'));
-  const lgUp = useMediaQuery((theme: Theme) => theme.breakpoints.up('lg'));
 
   // drawer
   const customizer = useSelector((state: AppState) => state.customizer);
@@ -71,26 +64,8 @@ const Header = () => {
         ) : (
           ''
         )}
-        {/* ------------------------------------------- */}
-        {/* Search Dropdown */}
-        {/* ------------------------------------------- */}
-        <Search />
-        {lgUp ? (
-          <>
-            <Navigation />
-          </>
-        ) : null}
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
-          <Language />
-          {/* ------------------------------------------- */}
-          {/* Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
-          <Cart />
-          {/* ------------------------------------------- */}
-          {/* End Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
-
           <IconButton size="large" color="inherit">
             {customizer.activeMode === 'light' ? (
               <IconMoon size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('dark'))} />
@@ -98,9 +73,6 @@ const Header = () => {
               <IconSun size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('light'))} />
             )}
           </IconButton>
-          <Notifications />
-
-          <Profile />
         </Stack>
       </ToolbarStyled>
     </AppBarStyled>

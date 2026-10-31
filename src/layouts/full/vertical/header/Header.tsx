@@ -7,18 +7,10 @@ import {
   setDarkMode,
 } from 'src/store/customizer/CustomizerSlice';
 import { IconMenu2, IconMoon, IconSun } from '@tabler/icons-react';
-import Notifications from './Notification';
-import Profile from './Profile';
-import Cart from './Cart';
-import Search from './Search';
-import Language from './Language';
 import { AppState } from 'src/store/Store';
-import Navigation from './Navigation';
-import MobileRightSidebar from './MobileRightSidebar';
 
 const Header = () => {
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up('lg'));
-  const lgDown = useMediaQuery((theme: any) => theme.breakpoints.down('lg'));
 
   // drawer
   const customizer = useSelector((state: AppState) => state.customizer);
@@ -52,26 +44,8 @@ const Header = () => {
           <IconMenu2 size="20" />
         </IconButton>
 
-        {/* ------------------------------------------- */}
-        {/* Search Dropdown */}
-        {/* ------------------------------------------- */}
-        <Search />
-        {lgUp ? (
-          <>
-            <Navigation />
-          </>
-        ) : null}
-
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
-          <Language />
-          {/* ------------------------------------------- */}
-          {/* Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
-          <Cart />
-          {/* ------------------------------------------- */}
-          {/* End Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
           <IconButton size="large" color="inherit">
             {customizer.activeMode === 'light' ? (
               <IconMoon size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('dark'))} />
@@ -79,12 +53,6 @@ const Header = () => {
               <IconSun size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('light'))} />
             )}
           </IconButton>
-          <Notifications />
-          {/* ------------------------------------------- */}
-          {/* Toggle Right Sidebar for mobile */}
-          {/* ------------------------------------------- */}
-          {lgDown ? <MobileRightSidebar /> : null}
-          <Profile />
         </Stack>
       </ToolbarStyled>
     </AppBarStyled>

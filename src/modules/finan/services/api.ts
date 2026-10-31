@@ -4,7 +4,6 @@ const BASE = '/api/finan';
 const DESLIGADO =
   'O servidor do Finan está desligado. Dê dois cliques em Iniciar-Finan.bat e tente de novo.';
 
-// Usa fetch, e não o axios do template, porque o _mockApis intercepta o axios.
 async function pedir<T>(caminho: string, opcoes?: RequestInit): Promise<T> {
   let resposta: Response;
   try {
