@@ -11,11 +11,46 @@ const BASE = '/api/finan';
 const DESLIGADO =
   'O servidor do Finan está desligado. Dê dois cliques em Iniciar-Finan.bat e tente de novo.';
 
-async function pedir<T>(caminho: string, opcoes?: RequestInit): Promise<T> {
+// Modo nuvem (app Android): o servidor exige um token, guardado no aparelho.
+const CHAVE_TOKEN = 'finan_token';
+
+function lerToken(): string {
+  try {
+    return localStorage.getItem(CHAVE_TOKEN) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function pedirToken(): string {
+  const digitado = window.prompt('Digite o código de acesso do Finan:') ?? '';
+  try {
+    if (digitado) localStorage.setItem(CHAVE_TOKEN, digitado);
+  } catch {
+    /* sem armazenamento: o código vale só nesta sessão */
+  }
+  return digitado;
+}
+
+let tokenEmUso = lerToken();
+
+async function executar(caminho: string, opcoes: RequestInit): Promise<Response> {
+  const cabecalhos = new Headers(opcoes.headers);
+  if (tokenEmUso) cabecalhos.set('Authorization', `Bearer ${tokenEmUso}`);
+  return fetch(`${BASE}${caminho}`, { ...opcoes, headers: cabecalhos });
+}
+
+async function pedir<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
   let resposta: Response;
   try {
-    resposta = await fetch(`${BASE}${caminho}`, opcoes);
-  } catch {
+    resposta = await executar(caminho, opcoes);
+    if (resposta.status === 401) {
+      tokenEmUso = pedirToken();
+      if (!tokenEmUso) throw new Error('Código de acesso necessário.');
+      resposta = await executar(caminho, opcoes);
+    }
+  } catch (erro) {
+    if (erro instanceof Error && erro.message.startsWith('Código')) throw erro;
     throw new Error(DESLIGADO);
   }
   const dados = await resposta.json().catch(() => null);

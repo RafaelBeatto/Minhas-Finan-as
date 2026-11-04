@@ -1,0 +1,8 @@
+node_modules
+dist
+android
+.git
+finan-servidor/dados
+finan-servidor/__pycache__
+**/.env
+**/*.db

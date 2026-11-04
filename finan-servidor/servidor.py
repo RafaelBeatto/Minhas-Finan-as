@@ -3,6 +3,7 @@
 Atende /api/finan em http://127.0.0.1:8766 e, se a pasta dist/ existir, o sistema compilado.
 Só aceita conexões do próprio computador.
 """
+import hmac
 import io
 import json
 import os
@@ -27,8 +28,8 @@ import historico
 import inteligencia
 import pluggy
 
-PORTA = int(os.getenv("FINAN_PORTA", "8766"))
-HOST = "127.0.0.1"
+PORTA = int(os.getenv("FINAN_PORTA", os.getenv("PORT", "8766")))
+HOST = os.getenv("FINAN_HOST", "127.0.0.1")
 PREFIXO = "/api/finan"
 PASTA = Path(__file__).resolve().parent
 DIST = PASTA.parent / "dist"
@@ -46,6 +47,11 @@ load_dotenv(DADOS / ".env")
 CLIENT_ID = os.getenv("PLUGGY_CLIENT_ID", "").strip()
 CLIENT_SECRET = os.getenv("PLUGGY_CLIENT_SECRET", "").strip()
 ITEM_ID = os.getenv("PLUGGY_ITEM_ID", "").strip()
+
+# Modo nuvem: com FINAN_TOKEN, a API aceita só quem envia o token no cabeçalho
+# Authorization e o servidor pode ficar acessível pela internet.
+TOKEN = os.getenv("FINAN_TOKEN", "").strip()
+NUVEM = bool(TOKEN)
 
 gravando = threading.Lock()  # regras e limites: uma gravação por vez
 sincronizando = threading.Lock()
@@ -380,8 +386,17 @@ class Manipulador(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(corpo)
 
+    def _autorizado(self):
+        """No modo nuvem, só entra quem envia o token. Localmente, não há token."""
+        if not NUVEM:
+            return True
+        enviado = self.headers.get("Authorization", "")
+        return hmac.compare_digest(enviado, f"Bearer {TOKEN}")
+
     def _origem_permitida(self):
         """Um site aberto no navegador não pode ler nem alterar os dados locais."""
+        if NUVEM:
+            return self._autorizado()
         origem = self.headers.get("Origin")
         return bool(LOCAL.match(self.headers.get("Host", ""))
                     and (origem is None or ORIGEM_LOCAL.match(origem)))
@@ -400,10 +415,14 @@ class Manipulador(SimpleHTTPRequestHandler):
             self._json(200, dados)
 
     def do_GET(self):
-        if not self._origem_permitida():
-            self._json(403, {"erro": "Origem não permitida."})
-            return
         partes = urlsplit(self.path)
+        # Na nuvem a página do app é pública; só a API exige o token.
+        if (partes.path.startswith(PREFIXO) or not NUVEM) and not self._origem_permitida():
+            if NUVEM:
+                self._json(401, {"erro": "Acesso negado."})
+            else:
+                self._json(403, {"erro": "Origem não permitida."})
+            return
         if partes.path == f"{PREFIXO}/exportar":
             self._exportar()
         elif partes.path.startswith(PREFIXO):
@@ -418,7 +437,9 @@ class Manipulador(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         funcao = ESCRITAS.get(urlsplit(self.path).path[len(PREFIXO):])
-        if not self._origem_permitida() or "application/json" not in self.headers.get("Content-Type", ""):
+        if NUVEM and not self._autorizado():
+            self._json(401, {"erro": "Acesso negado."})
+        elif not self._origem_permitida() or "application/json" not in self.headers.get("Content-Type", ""):
             self._json(403, {"erro": "Origem não permitida."})
         elif funcao is None:
             self._json(404, {"erro": "Endereço não encontrado."})
@@ -491,13 +512,16 @@ def porta_ocupada():
 
 
 def principal():
+    if not NUVEM and HOST not in ("127.0.0.1", "localhost"):
+        print("Para expor o Finan em outro endereço é obrigatório definir FINAN_TOKEN.")
+        return 1
     DADOS.mkdir(exist_ok=True)
     try:
         servidor = Servidor((HOST, PORTA), partial(Manipulador, directory=str(DIST)))
     except OSError:
         return porta_ocupada()
     print(f"Finan em execução: http://{HOST}:{PORTA}/finan (feche esta janela para encerrar)")
-    if (DIST / "index.html").is_file() and "--sem-navegador" not in sys.argv:
+    if (DIST / "index.html").is_file() and "--sem-navegador" not in sys.argv and not NUVEM:
         threading.Timer(0.3, webbrowser.open, args=(f"http://{HOST}:{PORTA}/finan",)).start()
     try:
         servidor.serve_forever()
