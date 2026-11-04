@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Chip,
+  Collapse,
   FormControlLabel,
   Grid,
   List,
@@ -22,7 +23,10 @@ import {
   TableSortLabel,
   TextField,
   Typography,
+  useMediaQuery,
+  Theme,
 } from '@mui/material';
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react';
 import PageContainer from 'src/components/container/PageContainer';
 import CorrigirCategoria from '../components/CorrigirCategoria';
 import { Indicadores, Secao, Vazio } from '../components/Visual';
@@ -89,6 +93,8 @@ const Coluna = ({
 
 const Extrato = () => {
   const { painel, moeda, versao } = useFinan();
+  const celular = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'));
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [periodo, setPeriodo] = useState('Este mês');
   const [conta, setConta] = useState('');
   const [busca, setBusca] = useState('');
@@ -189,137 +195,169 @@ const Extrato = () => {
   return (
     <PageContainer title="Extrato · Finan">
       <>
-        <Stack spacing={3}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              select
-              size="small"
-              label="Período"
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value)}
-              sx={{ minWidth: 180 }}
-            >
-              {[...(painel?.periodos ?? []), PERSONALIZADO].map((p) => (
-                <MenuItem key={p} value={p}>
-                  {p}
-                </MenuItem>
-              ))}
-            </TextField>
-            {periodo === PERSONALIZADO && (
-              <>
+        <Stack spacing={{ xs: 1.5, sm: 3 }}>
+          {celular && (
+            <Stack direction="row" spacing={1}>
+              <TextField
+                size="small"
+                label="Buscar descrição"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                fullWidth
+              />
+              <Button
+                variant={filtrosAbertos ? 'contained' : 'outlined'}
+                onClick={() => setFiltrosAbertos(!filtrosAbertos)}
+                startIcon={<IconAdjustmentsHorizontal size={18} />}
+                sx={{ flexShrink: 0 }}
+              >
+                {filtrosAtivos ? filtrosAtivos : 'Filtros'}
+              </Button>
+            </Stack>
+          )}
+          <Collapse in={!celular || filtrosAbertos} unmountOnExit={false}>
+            <Stack spacing={{ xs: 1.5, sm: 3 }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                <TextField
+                  select
+                  size="small"
+                  label="Período"
+                  value={periodo}
+                  onChange={(e) => setPeriodo(e.target.value)}
+                  sx={{ minWidth: { md: 180 } }}
+                >
+                  {[...(painel?.periodos ?? []), PERSONALIZADO].map((p) => (
+                    <MenuItem key={p} value={p}>
+                      {p}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                {periodo === PERSONALIZADO && (
+                  <>
+                    <TextField
+                      size="small"
+                      type="date"
+                      label="De"
+                      value={de}
+                      onChange={(e) => setDe(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                    <TextField
+                      size="small"
+                      type="date"
+                      label="Até"
+                      value={ate}
+                      onChange={(e) => setAte(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </>
+                )}
+                <TextField
+                  select
+                  size="small"
+                  label="Conta"
+                  value={conta}
+                  onChange={(e) => setConta(e.target.value)}
+                  sx={{ minWidth: { md: 200 } }}
+                >
+                  <MenuItem value="">Todas</MenuItem>
+                  {painel?.nomes_contas.map((c) => (
+                    <MenuItem key={c} value={c}>
+                      {c}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                {!celular && (
+                  <TextField
+                    size="small"
+                    label="Buscar descrição"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    fullWidth
+                  />
+                )}
+              </Stack>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={2}
+                alignItems={{ md: 'center' }}
+              >
+                <TextField
+                  select
+                  size="small"
+                  label="Tipo"
+                  value={tipo}
+                  onChange={(e) => setTipo(e.target.value)}
+                  sx={{ minWidth: { md: 170 } }}
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  {TIPOS.map((t) => (
+                    <MenuItem key={t.valor} value={t.valor}>
+                      {t.rotulo}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  size="small"
+                  label="Categoria"
+                  value={categoria}
+                  onChange={(e) => setCategoria(e.target.value)}
+                  sx={{ minWidth: { md: 190 } }}
+                >
+                  <MenuItem value="">Todas</MenuItem>
+                  {categorias.map((c) => (
+                    <MenuItem key={c} value={c}>
+                      {c}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  size="small"
+                  label="Situação"
+                  value={situacao}
+                  onChange={(e) => setSituacao(e.target.value)}
+                  sx={{ minWidth: { md: 170 } }}
+                >
+                  <MenuItem value="">Todas</MenuItem>
+                  {SITUACOES.map((s) => (
+                    <MenuItem key={s.valor} value={s.valor}>
+                      {s.rotulo}
+                    </MenuItem>
+                  ))}
+                </TextField>
                 <TextField
                   size="small"
-                  type="date"
-                  label="De"
-                  value={de}
-                  onChange={(e) => setDe(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  label="Valor mínimo"
+                  value={minimo}
+                  onChange={(e) => setMinimo(e.target.value)}
+                  inputProps={{ inputMode: 'decimal' }}
                 />
                 <TextField
                   size="small"
-                  type="date"
-                  label="Até"
-                  value={ate}
-                  onChange={(e) => setAte(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  label="Valor máximo"
+                  value={maximo}
+                  onChange={(e) => setMaximo(e.target.value)}
+                  inputProps={{ inputMode: 'decimal' }}
                 />
-              </>
-            )}
-            <TextField
-              select
-              size="small"
-              label="Conta"
-              value={conta}
-              onChange={(e) => setConta(e.target.value)}
-              sx={{ minWidth: 200 }}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {painel?.nomes_contas.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              size="small"
-              label="Buscar descrição"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              fullWidth
-            />
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
-            <TextField
-              select
-              size="small"
-              label="Tipo"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              sx={{ minWidth: 170 }}
-            >
-              <MenuItem value="">Todos</MenuItem>
-              {TIPOS.map((t) => (
-                <MenuItem key={t.valor} value={t.valor}>
-                  {t.rotulo}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="Categoria"
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              sx={{ minWidth: 190 }}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {categorias.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="Situação"
-              value={situacao}
-              onChange={(e) => setSituacao(e.target.value)}
-              sx={{ minWidth: 170 }}
-            >
-              <MenuItem value="">Todas</MenuItem>
-              {SITUACOES.map((s) => (
-                <MenuItem key={s.valor} value={s.valor}>
-                  {s.rotulo}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              size="small"
-              label="Valor mínimo"
-              value={minimo}
-              onChange={(e) => setMinimo(e.target.value)}
-              inputProps={{ inputMode: 'decimal' }}
-            />
-            <TextField
-              size="small"
-              label="Valor máximo"
-              value={maximo}
-              onChange={(e) => setMaximo(e.target.value)}
-              inputProps={{ inputMode: 'decimal' }}
-            />
-          </Stack>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <FormControlLabel
-              control={
-                <Switch checked={semInternas} onChange={(e) => setSemInternas(e.target.checked)} />
-              }
-              label="Esconder movimentação interna"
-            />
-            <Button size="small" onClick={limparFiltros} disabled={!filtrosAtivos}>
-              {filtrosAtivos ? `Limpar filtros (${filtrosAtivos})` : 'Limpar filtros'}
-            </Button>
-          </Stack>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={semInternas}
+                      onChange={(e) => setSemInternas(e.target.checked)}
+                    />
+                  }
+                  label="Esconder movimentação interna"
+                />
+                <Button size="small" onClick={limparFiltros} disabled={!filtrosAtivos}>
+                  {filtrosAtivos ? `Limpar filtros (${filtrosAtivos})` : 'Limpar filtros'}
+                </Button>
+              </Stack>
+            </Stack>
+          </Collapse>
 
           {erro && <Alert severity="error">{erro}</Alert>}
 
@@ -332,11 +370,11 @@ const Extrato = () => {
           />
 
           <Box>
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 1.5, sm: 3 }}>
               <Grid item xs={12} lg={8}>
                 <Secao
                   titulo="Transações"
-                  subtitulo={`${transacoes.length} no filtro · clique para corrigir a categoria`}
+                  subtitulo={`${transacoes.length} no filtro · toque para corrigir a categoria`}
                   acao={
                     <Stack direction="row" spacing={1} alignItems="center">
                       {categoria && (
@@ -348,7 +386,7 @@ const Extrato = () => {
                         label="Ordenar por"
                         value={ordem}
                         onChange={(e) => ordenar(e.target.value)}
-                        sx={{ minWidth: 170 }}
+                        sx={{ minWidth: { md: 170 } }}
                       >
                         {ORDENACOES.map((o) => (
                           <MenuItem key={o.valor} value={o.valor}>
@@ -361,88 +399,133 @@ const Extrato = () => {
                 >
                   {transacoes.length ? (
                     <>
-                      <TableContainer>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>
-                                <Coluna
-                                  campo="data"
-                                  rotulo="Data"
-                                  ordem={ordem}
-                                  aoOrdenar={ordenar}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Coluna
-                                  campo="descricao"
-                                  rotulo="Descrição"
-                                  ordem={ordem}
-                                  aoOrdenar={ordenar}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Coluna
-                                  campo="categoria"
-                                  rotulo="Categoria"
-                                  ordem={ordem}
-                                  aoOrdenar={ordenar}
-                                />
-                              </TableCell>
-                              <TableCell>Conta</TableCell>
-                              <TableCell align="right">
-                                <Coluna
-                                  campo="valor"
-                                  rotulo="Valor"
-                                  ordem={ordem}
-                                  aoOrdenar={ordenar}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {transacoes
-                              .slice(pagina * porPagina, (pagina + 1) * porPagina)
-                              .map((t) => (
-                                <TableRow
-                                  key={t.id}
-                                  hover
-                                  onClick={() => setCorrigindo(t)}
-                                  sx={{ cursor: 'pointer', opacity: t.interno ? 0.6 : 1 }}
-                                >
-                                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                                    {dataBr(t.data)}
-                                  </TableCell>
-                                  <TableCell>
+                      {celular ? (
+                        <List disablePadding>
+                          {transacoes
+                            .slice(pagina * porPagina, (pagina + 1) * porPagina)
+                            .map((t) => (
+                              <ListItemButton
+                                key={t.id}
+                                onClick={() => setCorrigindo(t)}
+                                divider
+                                sx={{
+                                  px: 0.5,
+                                  py: 1,
+                                  alignItems: 'flex-start',
+                                  opacity: t.interno ? 0.6 : 1,
+                                }}
+                              >
+                                <Box flex={1} minWidth={0} pr={1.5}>
+                                  <Typography variant="body2" fontWeight={500} noWrap>
                                     {t.parcelas_total > 1
                                       ? `${t.descricao} (${t.parcela}/${t.parcelas_total})`
                                       : t.descricao}
-                                    {t.pendente && (
-                                      <Chip size="small" label="Pendente" sx={{ ml: 1 }} />
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    noWrap
+                                    display="block"
+                                  >
+                                    {dataBr(t.data)} ·{' '}
                                     {t.corrigida ? `${t.categoria} *` : t.categoria}
-                                  </TableCell>
-                                  <TableCell sx={{ maxWidth: 140 }}>
-                                    <Typography variant="body2" noWrap>
-                                      {t.conta}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                                    {moeda(t.valor)}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                                    {t.pendente && ' · Pendente'}
+                                  </Typography>
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  sx={{ whiteSpace: 'nowrap' }}
+                                >
+                                  {moeda(t.valor)}
+                                </Typography>
+                              </ListItemButton>
+                            ))}
+                        </List>
+                      ) : (
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>
+                                  <Coluna
+                                    campo="data"
+                                    rotulo="Data"
+                                    ordem={ordem}
+                                    aoOrdenar={ordenar}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Coluna
+                                    campo="descricao"
+                                    rotulo="Descrição"
+                                    ordem={ordem}
+                                    aoOrdenar={ordenar}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Coluna
+                                    campo="categoria"
+                                    rotulo="Categoria"
+                                    ordem={ordem}
+                                    aoOrdenar={ordenar}
+                                  />
+                                </TableCell>
+                                <TableCell>Conta</TableCell>
+                                <TableCell align="right">
+                                  <Coluna
+                                    campo="valor"
+                                    rotulo="Valor"
+                                    ordem={ordem}
+                                    aoOrdenar={ordenar}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {transacoes
+                                .slice(pagina * porPagina, (pagina + 1) * porPagina)
+                                .map((t) => (
+                                  <TableRow
+                                    key={t.id}
+                                    hover
+                                    onClick={() => setCorrigindo(t)}
+                                    sx={{ cursor: 'pointer', opacity: t.interno ? 0.6 : 1 }}
+                                  >
+                                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                      {dataBr(t.data)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {t.parcelas_total > 1
+                                        ? `${t.descricao} (${t.parcela}/${t.parcelas_total})`
+                                        : t.descricao}
+                                      {t.pendente && (
+                                        <Chip size="small" label="Pendente" sx={{ ml: 1 }} />
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {t.corrigida ? `${t.categoria} *` : t.categoria}
+                                    </TableCell>
+                                    <TableCell sx={{ maxWidth: 140 }}>
+                                      <Typography variant="body2" noWrap>
+                                        {t.conta}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                                      {moeda(t.valor)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
                       <TablePagination
                         component="div"
                         count={transacoes.length}
                         page={pagina}
                         rowsPerPage={porPagina}
-                        rowsPerPageOptions={[25, 50, 100]}
+                        rowsPerPageOptions={celular ? [] : [25, 50, 100]}
                         labelRowsPerPage="Por página"
                         labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
                         onPageChange={(_, nova) => setPagina(nova)}

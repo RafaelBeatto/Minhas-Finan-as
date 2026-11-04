@@ -1,18 +1,15 @@
 import { useState } from 'react';
-import {
-  MenuItem,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-} from '@mui/material';
+import { MenuItem, Stack, TextField } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
 import DefinirLimite from '../components/DefinirLimite';
-import { BarraUso, EtiquetaEstado, Indicadores, Secao, Vazio } from '../components/Visual';
+import {
+  BarraUso,
+  EtiquetaEstado,
+  Indicadores,
+  Secao,
+  TabelaAdaptavel,
+  Vazio,
+} from '../components/Visual';
 import { useFinan } from '../hooks/useFinan';
 import { nomeMes, porcento, semAcento } from '../services/formato';
 import { LinhaOrcamento } from '../types';
@@ -35,7 +32,7 @@ const Orcamento = () => {
   return (
     <PageContainer title="Orçamento · Finan">
       <>
-        <Stack spacing={3}>
+        <Stack spacing={{ xs: 1.5, sm: 3 }}>
           <Indicadores
             itens={[
               { titulo: 'Orçado no mês', valor: moeda(soma((l) => l.limite ?? 0)) },
@@ -75,65 +72,51 @@ const Orcamento = () => {
             }
           >
             {visiveis.length ? (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Categoria</TableCell>
-                      <TableCell align="right">Limite</TableCell>
-                      <TableCell align="right">Gasto</TableCell>
-                      <TableCell align="right">Resta</TableCell>
-                      <TableCell sx={{ minWidth: 140 }}>Uso</TableCell>
-                      <TableCell align="right">Média 3 meses</TableCell>
-                      <TableCell>Situação</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {visiveis.map((l) => (
-                      <TableRow
-                        key={l.categoria}
-                        hover
-                        onClick={() => setEditando(l)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell>{l.categoria}</TableCell>
-                        <TableCell align="right">
-                          {l.limite === null ? '—' : moeda(l.limite)}
-                        </TableCell>
-                        <TableCell align="right">{moeda(l.gasto)}</TableCell>
-                        <TableCell align="right">
-                          {l.restante === null ? '—' : moeda(l.restante)}
-                        </TableCell>
-                        <TableCell>
-                          {l.uso === null ? (
-                            '—'
-                          ) : (
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Stack flexGrow={1}>
-                                <BarraUso
-                                  uso={l.uso}
-                                  cor={
-                                    l.estado === 'estourou'
-                                      ? 'error'
-                                      : l.estado === 'atencao'
-                                        ? 'warning'
-                                        : 'primary'
-                                  }
-                                />
-                              </Stack>
-                              <span>{porcento(l.uso)}</span>
-                            </Stack>
-                          )}
-                        </TableCell>
-                        <TableCell align="right">{moeda(l.media)}</TableCell>
-                        <TableCell>
-                          <EtiquetaEstado estado={l.estado} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <TabelaAdaptavel
+                linhas={visiveis}
+                chave={(l) => l.categoria}
+                aoClicar={setEditando}
+                colunas={[
+                  { rotulo: 'Categoria', render: (l) => l.categoria },
+                  { rotulo: 'Gasto', align: 'right', render: (l) => moeda(l.gasto) },
+                  {
+                    rotulo: 'Limite',
+                    align: 'right',
+                    render: (l) => (l.limite === null ? '—' : moeda(l.limite)),
+                  },
+                  {
+                    rotulo: 'Resta',
+                    align: 'right',
+                    render: (l) => (l.restante === null ? '—' : moeda(l.restante)),
+                  },
+                  {
+                    rotulo: 'Uso',
+                    largura: 140,
+                    render: (l) =>
+                      l.uso === null ? (
+                        '—'
+                      ) : (
+                        <Stack direction="row" spacing={1} alignItems="center" minWidth={90}>
+                          <Stack flexGrow={1}>
+                            <BarraUso
+                              uso={l.uso}
+                              cor={
+                                l.estado === 'estourou'
+                                  ? 'error'
+                                  : l.estado === 'atencao'
+                                    ? 'warning'
+                                    : 'primary'
+                              }
+                            />
+                          </Stack>
+                          <span>{porcento(l.uso)}</span>
+                        </Stack>
+                      ),
+                  },
+                  { rotulo: 'Média 3 meses', align: 'right', render: (l) => moeda(l.media) },
+                  { rotulo: 'Situação', render: (l) => <EtiquetaEstado estado={l.estado} /> },
+                ]}
+              />
             ) : (
               <Vazio
                 texto={

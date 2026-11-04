@@ -34,7 +34,7 @@ const VisaoGeral = () => {
 
   return (
     <PageContainer title="Visão geral · Finan">
-      <Stack spacing={3}>
+      <Stack spacing={{ xs: 1.5, sm: 3 }}>
         {painel.alerta && (
           <Alert
             severity="warning"
@@ -53,6 +53,11 @@ const VisaoGeral = () => {
               titulo: 'Saldo em conta',
               valor: painel.tem_contas ? moeda(painel.em_conta) : '—',
               detalhe: painel.tem_contas ? `${painel.contas.length} contas` : 'Atualize para ver',
+            },
+            {
+              titulo: 'Caixinhas',
+              valor: painel.investimentos.length ? moeda(painel.investido) : '—',
+              detalhe: 'Veja na aba Caixinha',
             },
             {
               titulo: 'Fatura do cartão',
@@ -78,7 +83,7 @@ const VisaoGeral = () => {
           ]}
         />
         <Box>
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 1.5, sm: 3 }}>
             <Grid item xs={12} lg={8}>
               <Secao titulo="Entradas e saídas" subtitulo="Sem movimentação interna">
                 {meses.length ? (
@@ -134,50 +139,6 @@ const VisaoGeral = () => {
                   </Stack>
                 ) : (
                   <Vazio texto="Nenhum gasto neste mês." />
-                )}
-              </Secao>
-            </Grid>
-            <Grid item xs={12}>
-              <Secao
-                titulo="Caixinhas e investimentos"
-                subtitulo={painel.investimentos.length ? `Total ${moeda(painel.investido)}` : undefined}
-              >
-                {painel.investimentos.length ? (
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Nome</TableCell>
-                          <TableCell>Tipo</TableCell>
-                          <TableCell align="right">Saldo</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {painel.investimentos.map((i) => (
-                          <TableRow key={i.id}>
-                            <TableCell>{i.nome}</TableCell>
-                            <TableCell>{i.tipo || '—'}</TableCell>
-                            <TableCell align="right">{moeda(i.saldo)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    <Typography variant="caption" color="text.secondary" display="block" mt={2}>
-                      O Nubank não informa o nome de cada caixinha, por isso aparecem como CDB.
-                      {painel.investimentos_encerrados > 0 &&
-                        ` ${painel.investimentos_encerrados} posições já resgatadas foram ocultadas.`}
-                    </Typography>
-                  </TableContainer>
-                ) : (
-                  <Vazio
-                    texto={
-                      painel.investimentos_status === 'vazio'
-                        ? 'A Pluggy não devolveu caixinhas nem investimentos para esta conexão.'
-                        : painel.investimentos_status === 'falhou'
-                          ? 'A Pluggy recusou a consulta de investimentos (plano ou banco sem esse dado).'
-                          : 'Clique em Atualizar para buscar caixinhas e investimentos.'
-                    }
-                  />
                 )}
               </Secao>
             </Grid>

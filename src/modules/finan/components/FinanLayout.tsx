@@ -33,16 +33,16 @@ const Conteudo = () => {
 
   return (
     <Box>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ sm: 'center' }}
-        spacing={2}
-        mb={2}
-      >
-        <Box>
-          <Typography variant="h3">Finan</Typography>
-          <Typography variant="subtitle2" color="text.secondary">
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} mb={2}>
+        <Box minWidth={0}>
+          <Typography variant="h3" sx={{ fontSize: { xs: '1.5rem', sm: undefined } }}>
+            Financeiro
+          </Typography>
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.7rem', sm: undefined }, lineHeight: 1.3 }}
+          >
             {atualizando ? 'Buscando dados na Pluggy…' : atualizadoEm} · somente leitura
           </Typography>
         </Box>
@@ -52,15 +52,34 @@ const Conteudo = () => {
               {ocultar ? <IconEyeOff size={20} /> : <IconEye size={20} />}
             </IconButton>
           </Tooltip>
+          <IconButton
+            href={ENDERECO_PLANILHA}
+            disabled={!painel}
+            aria-label="Baixar Excel"
+            sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+          >
+            <IconDownload size={20} />
+          </IconButton>
+          <IconButton
+            color="primary"
+            onClick={atualizar}
+            disabled={atualizando || !painel?.configurado}
+            aria-label="Atualizar"
+            sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+          >
+            {atualizando ? <CircularProgress size={18} /> : <IconRefresh size={20} />}
+          </IconButton>
           <Button
             variant="outlined"
             startIcon={<IconDownload size={18} />}
             href={ENDERECO_PLANILHA}
             disabled={!painel}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             Excel
           </Button>
           <Button
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             variant="contained"
             startIcon={
               atualizando ? (

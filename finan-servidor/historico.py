@@ -20,6 +20,17 @@ CREATE TABLE IF NOT EXISTS transacoes (
 CRIAR_INSTANTANEO = """
 CREATE TABLE IF NOT EXISTS instantaneo (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)
 """
+CRIAR_SALDOS = """
+CREATE TABLE IF NOT EXISTS saldos_investimento (
+    data TEXT NOT NULL, investimento_id TEXT NOT NULL, saldo REAL NOT NULL,
+    PRIMARY KEY (data, investimento_id)
+)
+"""
+CRIAR_MOVIMENTOS = """
+CREATE TABLE IF NOT EXISTS movimentos_investimento (
+    id TEXT PRIMARY KEY, investimento_id TEXT NOT NULL, data TEXT NOT NULL, valor REAL NOT NULL
+)
+"""
 COLUNAS_CARTAO = {"parcela": "INTEGER", "parcelas_total": "INTEGER",
                   "data_compra": "TEXT", "mes_fatura": "TEXT"}
 COLUNAS = ("id", "conta_id", "conta", "data", "descricao", "chave", "categoria_original",
@@ -31,6 +42,8 @@ def _abrir(caminho):
     conexao.row_factory = sqlite3.Row
     conexao.execute(CRIAR_TABELA)
     conexao.execute(CRIAR_INSTANTANEO)
+    conexao.execute(CRIAR_SALDOS)
+    conexao.execute(CRIAR_MOVIMENTOS)
     existentes = {c["name"] for c in conexao.execute("PRAGMA table_info(transacoes)")}
     for coluna, tipo in COLUNAS_CARTAO.items():
         if coluna not in existentes:
@@ -86,6 +99,33 @@ def salvar_instantaneo(caminho, dados):
     linhas = [(chave, json.dumps(valor, ensure_ascii=False)) for chave, valor in dados.items()]
     with closing(_abrir(caminho)) as conexao, conexao:
         conexao.executemany("INSERT OR REPLACE INTO instantaneo (chave, valor) VALUES (?, ?)", linhas)
+
+
+def salvar_saldos(caminho, dia, saldos):
+    """Um saldo por caixinha por dia (o último do dia vale): é o que permite medir o rendimento."""
+    linhas = [(dia, investimento_id, saldo) for investimento_id, saldo in saldos.items()]
+    with closing(_abrir(caminho)) as conexao, conexao:
+        conexao.executemany("INSERT OR REPLACE INTO saldos_investimento VALUES (?, ?, ?)", linhas)
+
+
+def carregar_saldos(caminho):
+    with closing(_abrir(caminho)) as conexao:
+        return [{"data": l["data"], "investimento_id": l["investimento_id"], "saldo": l["saldo"]}
+                for l in conexao.execute("SELECT * FROM saldos_investimento")]
+
+
+def salvar_movimentos(caminho, movimentos):
+    """Aportes (+) e resgates (-) de cada caixinha, para não contá-los como rendimento."""
+    linhas = [(m["id"], m["investimento_id"], m["data"], m["valor"]) for m in movimentos]
+    with closing(_abrir(caminho)) as conexao, conexao:
+        conexao.executemany("INSERT OR REPLACE INTO movimentos_investimento VALUES (?, ?, ?, ?)", linhas)
+
+
+def carregar_movimentos(caminho):
+    with closing(_abrir(caminho)) as conexao:
+        return [{"id": l["id"], "investimento_id": l["investimento_id"], "data": l["data"],
+                 "valor": l["valor"]}
+                for l in conexao.execute("SELECT * FROM movimentos_investimento")]
 
 
 def carregar_instantaneo(caminho):

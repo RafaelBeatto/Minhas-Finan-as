@@ -1,4 +1,5 @@
 """Busca contas, transações e faturas na Pluggy. Somente leitura: não movimenta dinheiro."""
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 import requests
 import financeiro as fin
@@ -78,6 +79,35 @@ def _buscar_investimentos(item_id, headers):
     return [{c: i.get(c) for c in CAMPOS_INVESTIMENTO} for i in encontrados]
 
 
+def _movimentos_de(inv, headers):
+    try:
+        lista = _todas_paginas(f"/investments/{inv['id']}/transactions", {}, headers)
+    except requests.RequestException:
+        return []
+    movimentos = []
+    for tx in lista:
+        tipo = (tx.get("type") or "").upper()
+        valor = abs(float(tx.get("value") or tx.get("amount") or 0))
+        if tipo == "BUY" or (tipo == "TRANSFER" and tx.get("movementType") == "CREDIT"):
+            sinal = 1
+        elif tipo == "SELL" or (tipo == "TRANSFER" and tx.get("movementType") == "DEBIT"):
+            sinal = -1
+        else:
+            continue
+        movimentos.append({"id": str(tx.get("id")), "investimento_id": inv["id"],
+                           "data": (tx.get("date") or "")[:10], "valor": sinal * valor})
+    return movimentos
+
+
+def _movimentos_investimentos(investimentos, headers):
+    """Aportes (+) e resgates (-), buscados em paralelo. Falhas só tiram o desconto do rendimento."""
+    if not investimentos:
+        return []
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        listas = pool.map(lambda inv: _movimentos_de(inv, headers), investimentos)
+    return [m for lista in listas for m in lista if m["data"]]
+
+
 def _leitura_do_banco(item_id, headers):
     """Quando a Pluggy leu o banco de verdade; sem resposta, valem as datas já salvas."""
     try:
@@ -124,6 +154,9 @@ def sincronizar(client_id, client_secret, item_id, arquivo):
         else:
             novos["investimentos"] = investimentos
             novos["investimentos_status"] = "ok" if investimentos else "vazio"
+            historico.salvar_saldos(arquivo, date.today().isoformat(),
+                                    {i["id"]: float(i.get("balance") or 0) for i in investimentos})
+            historico.salvar_movimentos(arquivo, _movimentos_investimentos(investimentos, headers))
         if categorias:
             novos["categorias"] = sorted({c["nome"] for c in categorias.values()})
         historico.salvar_instantaneo(arquivo, novos)

@@ -7,11 +7,10 @@ import Spinner from 'src/views/spinner/Spinner';
 
 // ===========================|| LOADABLE - LAZY LOADING ||=========================== //
 
-const Loadable = (Component: any) => (props: any) =>
-  (
-    <Suspense fallback={<Spinner />}>
-      <Component {...props} />
-    </Suspense>
-  );
+const Loadable = (Component: any) => (props: any) => (
+  <Suspense fallback={<Spinner />}>
+    <Component {...props} />
+  </Suspense>
+);
 
 export default Loadable;

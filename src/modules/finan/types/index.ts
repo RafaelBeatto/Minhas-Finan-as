@@ -15,6 +15,26 @@ export interface Investimento {
   data: string | null;
 }
 
+export interface PeriodoRendimento {
+  rotulo: string;
+  de: string;
+  ate: string;
+  saldo_inicial: number;
+  saldo_final: number;
+  aportes: number;
+  rendimento: number;
+  percentual: number | null;
+  parcial: boolean;
+  variacao: number | null;
+}
+
+export interface Rendimento {
+  semanas: PeriodoRendimento[];
+  meses: PeriodoRendimento[];
+  desde: string | null;
+  tem_aportes: boolean;
+}
+
 export interface ResumoCartao {
   fatura: number;
   limite: number;
@@ -87,6 +107,7 @@ export interface Painel {
   investimentos_encerrados: number;
   investido: number;
   investimentos_status: 'ok' | 'vazio' | 'falhou' | null;
+  rendimento: Rendimento;
   cartao: ResumoCartao;
   faturas: Fatura[];
   mensal: Mes[];

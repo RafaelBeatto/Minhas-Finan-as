@@ -11,18 +11,12 @@ import {
   DialogTitle,
   MenuItem,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
 } from '@mui/material';
 import { IconPlus } from '@tabler/icons-react';
 import PageContainer from 'src/components/container/PageContainer';
 import EditarCategoria from '../components/EditarCategoria';
-import { BarraUso, Indicadores, Secao, Vazio } from '../components/Visual';
+import { BarraUso, Indicadores, Secao, TabelaAdaptavel, Vazio } from '../components/Visual';
 import { useFinan } from '../hooks/useFinan';
 import {
   buscarCategorias,
@@ -149,7 +143,7 @@ const Categorias = () => {
   return (
     <PageContainer title="Categorias · Finan">
       <>
-        <Stack spacing={3}>
+        <Stack spacing={{ xs: 1.5, sm: 3 }}>
           {erro && <Alert severity="error">{erro}</Alert>}
           <Indicadores
             itens={[
@@ -208,51 +202,44 @@ const Categorias = () => {
             }
           >
             {linhas.length ? (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Categoria</TableCell>
-                      <TableCell align="right">Gastos</TableCell>
-                      <TableCell sx={{ minWidth: 130 }}>Fatia</TableCell>
-                      <TableCell align="right">Entradas</TableCell>
-                      <TableCell align="right">Lançamentos</TableCell>
-                      <TableCell align="right">Limite</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {linhas.map((l) => (
-                      <TableRow
-                        key={l.categoria}
-                        hover
-                        onClick={() => setEditando(l)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell>
-                          {l.categoria}
-                          {l.personalizada && (
-                            <Chip size="small" variant="outlined" label="Sua" sx={{ ml: 1 }} />
-                          )}
-                        </TableCell>
-                        <TableCell align="right">{moeda(l.gastos)}</TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Stack flexGrow={1}>
-                              <BarraUso uso={l.fatia} />
-                            </Stack>
-                            <span>{porcento(l.fatia)}</span>
-                          </Stack>
-                        </TableCell>
-                        <TableCell align="right">{moeda(l.entradas)}</TableCell>
-                        <TableCell align="right">{l.lancamentos}</TableCell>
-                        <TableCell align="right">
-                          {l.limite === null ? '—' : moeda(l.limite)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <TabelaAdaptavel
+                linhas={linhas}
+                chave={(l) => l.categoria}
+                aoClicar={setEditando}
+                colunas={[
+                  {
+                    rotulo: 'Categoria',
+                    render: (l) => (
+                      <>
+                        {l.categoria}
+                        {l.personalizada && (
+                          <Chip size="small" variant="outlined" label="Sua" sx={{ ml: 1 }} />
+                        )}
+                      </>
+                    ),
+                  },
+                  { rotulo: 'Gastos', align: 'right', render: (l) => moeda(l.gastos) },
+                  {
+                    rotulo: 'Fatia',
+                    largura: 130,
+                    render: (l) => (
+                      <Stack direction="row" spacing={1} alignItems="center" minWidth={90}>
+                        <Stack flexGrow={1}>
+                          <BarraUso uso={l.fatia} />
+                        </Stack>
+                        <span>{porcento(l.fatia)}</span>
+                      </Stack>
+                    ),
+                  },
+                  { rotulo: 'Entradas', align: 'right', render: (l) => moeda(l.entradas) },
+                  { rotulo: 'Lançamentos', align: 'right', render: (l) => l.lancamentos },
+                  {
+                    rotulo: 'Limite',
+                    align: 'right',
+                    render: (l) => (l.limite === null ? '—' : moeda(l.limite)),
+                  },
+                ]}
+              />
             ) : (
               <Vazio texto="Nenhuma categoria encontrada." />
             )}
@@ -288,37 +275,33 @@ const Categorias = () => {
           )}
           <Secao titulo="Regras salvas" subtitulo="Correções feitas por você">
             {regras.length ? (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Descrição</TableCell>
-                      <TableCell>Categoria</TableCell>
-                      <TableCell>Vale para</TableCell>
-                      <TableCell align="right">Lançamentos</TableCell>
-                      <TableCell />
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {regras.map((r) => (
-                      <TableRow key={`${r.tipo}${r.chave}`}>
-                        <TableCell>{r.descricao}</TableCell>
-                        <TableCell>{r.categoria}</TableCell>
-                        <TableCell>
-                          {ROTULOS_REGRA[r.tipo]}
-                          {r.minimo !== null && ` (${ocultavel(moeda(r.minimo))})`}
-                        </TableCell>
-                        <TableCell align="right">{r.lancamentos}</TableCell>
-                        <TableCell align="right">
-                          <Button size="small" color="inherit" onClick={() => removerRegra(r)}>
-                            Remover
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <TabelaAdaptavel
+                linhas={regras}
+                chave={(r) => `${r.tipo}${r.chave}`}
+                colunas={[
+                  { rotulo: 'Descrição', render: (r) => r.descricao },
+                  { rotulo: 'Lançamentos', align: 'right', render: (r) => r.lancamentos },
+                  { rotulo: 'Categoria', render: (r) => r.categoria },
+                  {
+                    rotulo: 'Vale para',
+                    render: (r) => (
+                      <>
+                        {ROTULOS_REGRA[r.tipo]}
+                        {r.minimo !== null && ` (${ocultavel(moeda(r.minimo))})`}
+                      </>
+                    ),
+                  },
+                  {
+                    rotulo: '',
+                    align: 'right',
+                    render: (r) => (
+                      <Button size="small" color="inherit" onClick={() => removerRegra(r)}>
+                        Remover
+                      </Button>
+                    ),
+                  },
+                ]}
+              />
             ) : (
               <Vazio texto="Nenhuma regra encontrada." />
             )}

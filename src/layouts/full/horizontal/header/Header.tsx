@@ -77,8 +77,8 @@ const Header = () => {
                   customizer.activeMode === 'light'
                     ? 'dark'
                     : customizer.activeMode === 'dark'
-                    ? 'nu'
-                    : 'light',
+                      ? 'nu'
+                      : 'light',
                 ),
               )
             }

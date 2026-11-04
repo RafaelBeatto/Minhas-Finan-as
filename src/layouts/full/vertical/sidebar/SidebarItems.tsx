@@ -46,8 +46,13 @@ const SidebarItems = () => {
             // {/********If Sub No Menu**********/}
           } else {
             return (
-              <NavItem item={item} key={item.id} pathDirect={pathDirect} hideMenu={hideMenu}
-              onClick={() => dispatch(toggleMobileSidebar())} />
+              <NavItem
+                item={item}
+                key={item.id}
+                pathDirect={pathDirect}
+                hideMenu={hideMenu}
+                onClick={() => dispatch(toggleMobileSidebar())}
+              />
             );
           }
         })}

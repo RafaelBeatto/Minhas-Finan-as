@@ -7,8 +7,16 @@ import {
   Grid,
   LinearProgress,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 import { ApexOptions } from 'apexcharts';
 import Chart from 'react-apexcharts';
@@ -25,15 +33,31 @@ export interface ItemIndicador {
 /** Linha de indicadores: número grande, um rótulo e, se houver, o contexto dele. */
 export const Indicadores = ({ itens }: { itens: ItemIndicador[] }) => (
   <Box>
-    <Grid container spacing={3}>
-      {itens.map(({ titulo, valor, detalhe }) => (
-        <Grid item xs={12} sm={itens.length % 2 ? 4 : 6} lg={12 / itens.length} key={titulo}>
+    <Grid container spacing={{ xs: 1.5, sm: 3 }}>
+      {itens.map(({ titulo, valor, detalhe }, i) => (
+        <Grid
+          item
+          xs={itens.length % 2 && i === itens.length - 1 ? 12 : 6}
+          sm={itens.length % 2 ? 4 : 6}
+          lg={12 / itens.length}
+          key={titulo}
+        >
           <Card variant="outlined" sx={{ p: 0, height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary">
+            <CardContent sx={{ p: { xs: 1.5, sm: 3 }, '&:last-child': { pb: { xs: 1.5, sm: 3 } } }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.75rem', sm: undefined } }}
+              >
                 {titulo}
               </Typography>
-              <Typography variant="h4" fontWeight={600} mt={1} noWrap>
+              <Typography
+                variant="h4"
+                fontWeight={600}
+                mt={{ xs: 0.5, sm: 1 }}
+                noWrap
+                sx={{ fontSize: { xs: '1.1rem', sm: undefined } }}
+              >
                 {valor}
               </Typography>
               {detalhe && (
@@ -77,6 +101,120 @@ export const BarraUso = ({ uso, cor }: { uso: number; cor?: 'primary' | 'warning
   />
 );
 
+export interface ColunaTabela<T> {
+  rotulo: string;
+  render: (linha: T) => ReactNode;
+  align?: 'right';
+  largura?: number;
+}
+
+/**
+ * Tabela no computador; no celular cada linha vira um item de lista:
+ * 1ª coluna é o título, 2ª o valor em destaque, as demais viram "rótulo: valor".
+ * Colunas sem rótulo (botões) ficam numa linha própria no fim.
+ */
+export function TabelaAdaptavel<T>({
+  colunas,
+  linhas,
+  chave,
+  aoClicar,
+  selecionada,
+}: {
+  colunas: ColunaTabela<T>[];
+  linhas: T[];
+  chave: (linha: T) => string;
+  aoClicar?: (linha: T) => void;
+  selecionada?: (linha: T) => boolean;
+}) {
+  const celular = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'));
+  if (!celular) {
+    return (
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              {colunas.map((c, i) => (
+                <TableCell key={i} align={c.align} sx={{ minWidth: c.largura }}>
+                  {c.rotulo}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {linhas.map((l) => (
+              <TableRow
+                key={chave(l)}
+                hover={!!aoClicar}
+                selected={selecionada?.(l)}
+                onClick={aoClicar && (() => aoClicar(l))}
+                sx={{ cursor: aoClicar ? 'pointer' : undefined }}
+              >
+                {colunas.map((c, i) => (
+                  <TableCell key={i} align={c.align}>
+                    {c.render(l)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  }
+
+  const [titulo, destaque, ...resto] = colunas;
+  const detalhes = resto.filter((c) => c.rotulo);
+  const acoes = resto.filter((c) => !c.rotulo);
+  return (
+    <Box>
+      {linhas.map((l) => (
+        <Box
+          key={chave(l)}
+          onClick={aoClicar && (() => aoClicar(l))}
+          sx={{
+            py: 1.25,
+            px: 0.5,
+            borderBottom: 1,
+            borderColor: 'divider',
+            cursor: aoClicar ? 'pointer' : undefined,
+            bgcolor: selecionada?.(l) ? 'action.selected' : undefined,
+            '&:last-of-type': { borderBottom: 0 },
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1.5}>
+            <Box fontWeight={500} minWidth={0} sx={{ overflowWrap: 'anywhere' }}>
+              {titulo.render(l)}
+            </Box>
+            {destaque && (
+              <Box fontWeight={600} whiteSpace="nowrap">
+                {destaque.render(l)}
+              </Box>
+            )}
+          </Stack>
+          {detalhes.length > 0 && (
+            <Stack direction="row" flexWrap="wrap" columnGap={2} rowGap={0.25} mt={0.5}>
+              {detalhes.map((c) => (
+                <Typography key={c.rotulo} variant="caption" color="text.secondary" component="div">
+                  {c.rotulo}: <Box component="span">{c.render(l)}</Box>
+                </Typography>
+              ))}
+            </Stack>
+          )}
+          {acoes.length > 0 && (
+            <Stack direction="row" justifyContent="flex-end" mt={0.5}>
+              {acoes.map((c, i) => (
+                <Box key={i} onClick={(e) => e.stopPropagation()}>
+                  {c.render(l)}
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 export const Vazio = ({ texto }: { texto: string }) => (
   <Box py={4} textAlign="center">
     <Typography color="text.secondary">{texto}</Typography>
@@ -95,16 +233,16 @@ export const Secao = ({
   children: ReactNode;
 }) => (
   <Card variant="outlined" sx={{ p: 0, height: '100%' }}>
-    <CardContent sx={{ p: 3 }}>
+    <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
       <Stack
         direction="row"
         flexWrap="wrap"
         justifyContent="space-between"
         alignItems="center"
-        gap={2}
+        gap={{ xs: 1, sm: 2 }}
         mb={2}
       >
-        <Box flex="1 1 220px" minWidth={0}>
+        <Box flex="1 1 160px" minWidth={0}>
           <Typography variant="h5">{titulo}</Typography>
           {subtitulo && (
             <Typography variant="subtitle2" color="text.secondary">
@@ -112,7 +250,7 @@ export const Secao = ({
             </Typography>
           )}
         </Box>
-        {acao}
+        {acao && <Box sx={{ width: { xs: '100%', md: 'auto' } }}>{acao}</Box>}
       </Stack>
       {children}
     </CardContent>
@@ -132,7 +270,7 @@ export const GraficoBarras = ({
   rotulos,
   series,
   formatar,
-  altura = 300,
+  altura = 260,
   horizontal = false,
   coresPontos,
 }: {
@@ -188,7 +326,7 @@ export const GraficoBarras = ({
       axisBorder: { show: false },
       axisTicks: { show: false },
       ...(horizontal && {
-        tickAmount: 4,
+        tickAmount: 3,
         labels: { show: !ocultar, formatter: (valor: string) => brlEixo(Number(valor)) },
       }),
     },

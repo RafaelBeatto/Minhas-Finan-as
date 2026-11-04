@@ -19,7 +19,7 @@ interface StateType {
 
 const initialState: StateType = {
   activeDir: 'ltr',
-  activeMode: 'light', // light | dark | nu
+  activeMode: 'dark', // light | dark | nu
   activeTheme: 'BLUE_THEME', // BLUE_THEME, GREEN_THEME, BLACK_THEME, PURPLE_THEME, ORANGE_THEME
   SidebarWidth: 270,
   MiniSidebarWidth: 87,

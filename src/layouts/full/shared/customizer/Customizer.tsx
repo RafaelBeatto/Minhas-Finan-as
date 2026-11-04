@@ -103,7 +103,12 @@ const Customizer: FC = () => {
         <Fab
           color="primary"
           aria-label="settings"
-          sx={{ position: 'fixed', right: '25px', bottom: '15px' }}
+          sx={{
+            position: 'fixed',
+            right: '25px',
+            bottom: '15px',
+            display: { xs: 'none', lg: 'flex' },
+          }}
           onClick={() => setShowDrawer(true)}
         >
           <IconSettings stroke={1.5} />
@@ -152,7 +157,9 @@ const Customizer: FC = () => {
                 Dark
               </StyledBox>
               <StyledBox onClick={() => dispatch(setDarkMode('nu'))} display="flex" gap={1}>
-                <DarkModeTwoToneIcon color={customizer.activeMode === 'nu' ? 'primary' : 'inherit'} />
+                <DarkModeTwoToneIcon
+                  color={customizer.activeMode === 'nu' ? 'primary' : 'inherit'}
+                />
                 Nu
               </StyledBox>
             </Stack>

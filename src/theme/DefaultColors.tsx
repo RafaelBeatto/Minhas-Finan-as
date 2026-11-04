@@ -132,22 +132,22 @@ const baseDarkTheme = {
   },
 };
 
-// Tema inspirado no Nubank: roxo #820AD1 sobre fundos roxo-escuros.
+// Tema inspirado no Nubank: roxo oficial #8A05BE sobre fundos roxo-escuros.
 const baseNuTheme = {
   ...baseDarkTheme,
   palette: {
     ...baseDarkTheme.palette,
     primary: {
-      main: '#A93FF0',
-      light: '#2E1146',
-      dark: '#820AD1',
+      main: '#8A05BE',
+      light: '#AB4DD6',
+      dark: '#6B0495',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#D9A8FF',
+      main: '#AB4DD6',
       light: '#2E1146',
-      dark: '#B77BEA',
-      contrastText: '#1a0830',
+      dark: '#8A05BE',
+      contrastText: '#ffffff',
     },
     grey: {
       100: '#2B1745',

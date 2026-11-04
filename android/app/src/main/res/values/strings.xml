@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Finan</string>
-    <string name="title_activity_main">Finan</string>
+    <string name="app_name">Financeiro</string>
+    <string name="title_activity_main">Financeiro</string>
     <string name="package_name">com.rafaelbeatto.finan</string>
     <string name="custom_url_scheme">com.rafaelbeatto.finan</string>
 </resources>

@@ -27,6 +27,7 @@ import financeiro as fin
 import historico
 import inteligencia
 import pluggy
+import rendimento
 
 PORTA = int(os.getenv("FINAN_PORTA", os.getenv("PORT", "8766")))
 HOST = os.getenv("FINAN_HOST", "127.0.0.1")
@@ -123,6 +124,8 @@ def painel(_consulta):
         "investimentos_encerrados": encerrados,
         "investido": sum(i["saldo"] for i in investimentos),
         "investimentos_status": instantaneo.get("investimentos_status"),
+        "rendimento": rendimento.resumo(historico.carregar_saldos(ARQUIVO_HISTORICO),
+                                        historico.carregar_movimentos(ARQUIVO_HISTORICO), hoje),
         "configurado": _configurado(),
         "atualizado_em": instantaneo.get("atualizado_em"),
         "banco_lido_em": instantaneo.get("banco_lido_em"),

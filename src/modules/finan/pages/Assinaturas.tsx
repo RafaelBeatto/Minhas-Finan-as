@@ -1,20 +1,7 @@
 import { useState } from 'react';
-import {
-  Alert,
-  Button,
-  Chip,
-  MenuItem,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-} from '@mui/material';
+import { Alert, Button, Chip, MenuItem, Stack, TextField } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
-import { Indicadores, Secao, Vazio } from '../components/Visual';
+import { Indicadores, Secao, TabelaAdaptavel, Vazio } from '../components/Visual';
 import { useFinan } from '../hooks/useFinan';
 import { ignorarAssinatura, restaurarAssinaturas } from '../services/api';
 import { dataBr } from '../services/formato';
@@ -61,7 +48,7 @@ const Assinaturas = () => {
 
   return (
     <PageContainer title="Assinaturas · Finan">
-      <Stack spacing={3}>
+      <Stack spacing={{ xs: 1.5, sm: 3 }}>
         {erro && <Alert severity="error">{erro}</Alert>}
         <Indicadores
           itens={[
@@ -100,42 +87,35 @@ const Assinaturas = () => {
           }
         >
           {visiveis.length ? (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Cobrança</TableCell>
-                    <TableCell>Categoria</TableCell>
-                    <TableCell align="right">Valor</TableCell>
-                    <TableCell align="right">Última</TableCell>
-                    <TableCell align="right">Próxima</TableCell>
-                    <TableCell>Situação</TableCell>
-                    <TableCell />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {visiveis.map((a) => (
-                    <TableRow key={a.chave}>
-                      <TableCell>{a.descricao}</TableCell>
-                      <TableCell>{a.categoria}</TableCell>
-                      <TableCell align="right">{moeda(a.valor)}</TableCell>
-                      <TableCell align="right">{dataBr(a.ultima)}</TableCell>
-                      <TableCell align="right">{a.ativa ? dataBr(a.proxima) : '—'}</TableCell>
-                      <TableCell>{situacao(a)}</TableCell>
-                      <TableCell align="right">
-                        <Button
-                          size="small"
-                          color="inherit"
-                          onClick={() => executar(ignorarAssinatura(a.chave))}
-                        >
-                          Não é assinatura
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <TabelaAdaptavel
+              linhas={visiveis}
+              chave={(a) => a.chave}
+              colunas={[
+                { rotulo: 'Cobrança', render: (a) => a.descricao },
+                { rotulo: 'Valor', align: 'right', render: (a) => moeda(a.valor) },
+                { rotulo: 'Categoria', render: (a) => a.categoria },
+                { rotulo: 'Última', align: 'right', render: (a) => dataBr(a.ultima) },
+                {
+                  rotulo: 'Próxima',
+                  align: 'right',
+                  render: (a) => (a.ativa ? dataBr(a.proxima) : '—'),
+                },
+                { rotulo: 'Situação', render: situacao },
+                {
+                  rotulo: '',
+                  align: 'right',
+                  render: (a) => (
+                    <Button
+                      size="small"
+                      color="inherit"
+                      onClick={() => executar(ignorarAssinatura(a.chave))}
+                    >
+                      Não é assinatura
+                    </Button>
+                  ),
+                },
+              ]}
+            />
           ) : (
             <Vazio
               texto={

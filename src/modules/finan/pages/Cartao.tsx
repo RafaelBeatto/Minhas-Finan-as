@@ -1,19 +1,14 @@
 import { useState } from 'react';
-import {
-  Box,
-  Grid,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, Grid, Stack, TextField, Typography } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
-import { BarraUso, GraficoBarras, Indicadores, Secao, Vazio } from '../components/Visual';
+import {
+  BarraUso,
+  GraficoBarras,
+  Indicadores,
+  Secao,
+  TabelaAdaptavel,
+  Vazio,
+} from '../components/Visual';
 import { useFinan } from '../hooks/useFinan';
 import { dataBr, nomeMes, porcento, semAcento } from '../services/formato';
 
@@ -29,7 +24,7 @@ const Cartao = () => {
 
   return (
     <PageContainer title="Cartão · Finan">
-      <Stack spacing={3}>
+      <Stack spacing={{ xs: 1.5, sm: 3 }}>
         <Indicadores
           itens={[
             { titulo: 'Fatura atual', valor: painel.tem_contas ? moeda(cartao.fatura) : '—' },
@@ -54,7 +49,7 @@ const Cartao = () => {
           </Box>
         )}
         <Box>
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 1.5, sm: 3 }}>
             <Grid item xs={12} lg={7}>
               <Secao
                 titulo="Parcelas em aberto"
@@ -71,32 +66,21 @@ const Cartao = () => {
                 }
               >
                 {visiveis.length ? (
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Compra</TableCell>
-                          <TableCell align="right">Parcela</TableCell>
-                          <TableCell align="right">Valor</TableCell>
-                          <TableCell align="right">Falta pagar</TableCell>
-                          <TableCell align="right">Termina</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {visiveis.map((p) => (
-                          <TableRow key={`${p.descricao}-${p.fim}-${p.parcela}-${p.valor}`}>
-                            <TableCell>{p.descricao}</TableCell>
-                            <TableCell align="right">
-                              {p.parcela}/{p.total}
-                            </TableCell>
-                            <TableCell align="right">{moeda(p.valor)}</TableCell>
-                            <TableCell align="right">{moeda(p.restante)}</TableCell>
-                            <TableCell align="right">{nomeMes(p.fim)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                  <TabelaAdaptavel
+                    linhas={visiveis}
+                    chave={(p) => `${p.descricao}-${p.fim}-${p.parcela}-${p.valor}`}
+                    colunas={[
+                      { rotulo: 'Compra', render: (p) => p.descricao },
+                      { rotulo: 'Valor', align: 'right', render: (p) => moeda(p.valor) },
+                      {
+                        rotulo: 'Parcela',
+                        align: 'right',
+                        render: (p) => `${p.parcela}/${p.total}`,
+                      },
+                      { rotulo: 'Falta pagar', align: 'right', render: (p) => moeda(p.restante) },
+                      { rotulo: 'Termina', align: 'right', render: (p) => nomeMes(p.fim) },
+                    ]}
+                  />
                 ) : (
                   <Vazio
                     texto={
@@ -124,32 +108,21 @@ const Cartao = () => {
         </Box>
         <Secao titulo="Faturas">
           {faturas.length ? (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Vencimento</TableCell>
-                    <TableCell>Fechamento</TableCell>
-                    <TableCell align="right">Total</TableCell>
-                    <TableCell align="right">Mínimo</TableCell>
-                    <TableCell align="right">Juros e encargos</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {faturas.map((f) => (
-                    <TableRow key={`${f.vencimento}-${f.total}`}>
-                      <TableCell>{dataBr(f.vencimento)}</TableCell>
-                      <TableCell>{dataBr(f.fechamento)}</TableCell>
-                      <TableCell align="right">{moeda(f.total)}</TableCell>
-                      <TableCell align="right">
-                        {f.minimo === null ? '—' : moeda(Number(f.minimo))}
-                      </TableCell>
-                      <TableCell align="right">{moeda(f.encargos)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <TabelaAdaptavel
+              linhas={faturas}
+              chave={(f) => `${f.vencimento}-${f.total}`}
+              colunas={[
+                { rotulo: 'Vencimento', render: (f) => dataBr(f.vencimento) },
+                { rotulo: 'Total', align: 'right', render: (f) => moeda(f.total) },
+                { rotulo: 'Fechamento', render: (f) => dataBr(f.fechamento) },
+                {
+                  rotulo: 'Mínimo',
+                  align: 'right',
+                  render: (f) => (f.minimo === null ? '—' : moeda(Number(f.minimo))),
+                },
+                { rotulo: 'Juros e encargos', align: 'right', render: (f) => moeda(f.encargos) },
+              ]}
+            />
           ) : (
             <Vazio texto="As faturas aparecem depois da primeira atualização." />
           )}

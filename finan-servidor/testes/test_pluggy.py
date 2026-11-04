@@ -37,6 +37,9 @@ def falsa_get(url, **argumentos):
         return resposta({"results": [FATURA], "totalPages": 1})
     if url.endswith("/investments"):
         return resposta({"results": [CAIXINHA], "totalPages": 1})
+    if url.endswith("/transactions") and "/investments/" in url:
+        return resposta({"results": [{"id": "m1", "type": "BUY", "value": 100.0,
+                                      "date": "2026-10-25T00:00:00Z"}], "totalPages": 1})
     if argumentos["params"]["accountId"] == "c1":
         return resposta({"results": [TRANSACAO]})
     return resposta({"results": []})

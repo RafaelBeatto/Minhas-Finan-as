@@ -6,7 +6,7 @@ const urlServidor = process.env.FINAN_URL?.trim();
 
 const config: CapacitorConfig = {
   appId: 'com.rafaelbeatto.finan',
-  appName: 'Finan',
+  appName: 'Financeiro',
   webDir: 'dist',
   server: urlServidor
     ? { url: `${urlServidor}/finan`, cleartext: false, androidScheme: 'https' }

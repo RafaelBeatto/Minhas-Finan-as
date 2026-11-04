@@ -1,18 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  MenuItem,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-} from '@mui/material';
+import { Alert, Box, MenuItem, Stack, TextField } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
-import { GraficoBarras, Secao, Vazio } from '../components/Visual';
+import { GraficoBarras, Secao, TabelaAdaptavel, Vazio } from '../components/Visual';
 import { useFinan } from '../hooks/useFinan';
 import { buscarComparacao } from '../services/api';
 import { nomeMes } from '../services/formato';
@@ -45,7 +34,7 @@ const Historico = () => {
 
   return (
     <PageContainer title="Histórico · Finan">
-      <Stack spacing={3}>
+      <Stack spacing={{ xs: 1.5, sm: 3 }}>
         {erro && <Alert severity="error">{erro}</Alert>}
         <Secao
           titulo="Mês a mês"
@@ -79,38 +68,23 @@ const Historico = () => {
                 formatar={moeda}
                 altura={260}
               />
-              <TableContainer sx={{ mt: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Mês</TableCell>
-                      <TableCell align="right">Entradas</TableCell>
-                      <TableCell align="right">Saídas</TableCell>
-                      <TableCell align="right">Resultado</TableCell>
-                      <TableCell align="right">Saídas x mês anterior</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {meses.map((m) => (
-                      <TableRow
-                        key={m.mes}
-                        hover
-                        selected={m.mes === selecionado}
-                        onClick={() => setSelecionado(m.mes)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell>{nomeMes(m.mes)}</TableCell>
-                        <TableCell align="right">{moeda(m.entradas)}</TableCell>
-                        <TableCell align="right">{moeda(m.saidas)}</TableCell>
-                        <TableCell align="right">{moeda(m.resultado)}</TableCell>
-                        <TableCell align="right">
-                          {m.variacao === null ? '—' : diferenca(m.variacao)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <TabelaAdaptavel
+                linhas={meses}
+                chave={(m) => m.mes}
+                aoClicar={(m) => setSelecionado(m.mes)}
+                selecionada={(m) => m.mes === selecionado}
+                colunas={[
+                  { rotulo: 'Mês', render: (m) => nomeMes(m.mes) },
+                  { rotulo: 'Resultado', align: 'right', render: (m) => moeda(m.resultado) },
+                  { rotulo: 'Entradas', align: 'right', render: (m) => moeda(m.entradas) },
+                  { rotulo: 'Saídas', align: 'right', render: (m) => moeda(m.saidas) },
+                  {
+                    rotulo: 'Saídas x mês anterior',
+                    align: 'right',
+                    render: (m) => (m.variacao === null ? '—' : diferenca(m.variacao)),
+                  },
+                ]}
+              />
             </>
           ) : (
             <Vazio texto="Nenhuma transação salva ainda." />
@@ -121,33 +95,27 @@ const Historico = () => {
             titulo={`Categorias em ${nomeMes(comparacao.mes)}`}
             subtitulo={`Comparado com ${nomeMes(comparacao.anterior)}, maiores altas primeiro`}
           >
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Categoria</TableCell>
-                    <TableCell align="right">Neste mês</TableCell>
-                    <TableCell align="right">Mês anterior</TableCell>
-                    <TableCell align="right">Diferença</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {comparacao.linhas.map((l) => (
-                    <TableRow key={l.categoria}>
-                      <TableCell>{l.categoria}</TableCell>
-                      <TableCell align="right">{moeda(l.atual)}</TableCell>
-                      <TableCell align="right">{moeda(l.anterior)}</TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ color: l.diferenca > 0 ? 'error.main' : 'success.main' }}
-                      >
-                        {diferenca(l.diferenca)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <TabelaAdaptavel
+              linhas={comparacao.linhas}
+              chave={(l) => l.categoria}
+              colunas={[
+                { rotulo: 'Categoria', render: (l) => l.categoria },
+                {
+                  rotulo: 'Diferença',
+                  align: 'right',
+                  render: (l) => (
+                    <Box
+                      component="span"
+                      sx={{ color: l.diferenca > 0 ? 'error.main' : 'success.main' }}
+                    >
+                      {diferenca(l.diferenca)}
+                    </Box>
+                  ),
+                },
+                { rotulo: 'Neste mês', align: 'right', render: (l) => moeda(l.atual) },
+                { rotulo: 'Mês anterior', align: 'right', render: (l) => moeda(l.anterior) },
+              ]}
+            />
           </Secao>
         )}
       </Stack>

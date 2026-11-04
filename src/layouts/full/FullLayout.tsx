@@ -5,6 +5,7 @@ import { Outlet } from 'react-router-dom';
 import { AppState } from 'src/store/Store';
 import Header from './vertical/header/Header';
 import Sidebar from './vertical/sidebar/Sidebar';
+import BottomNav from './shared/BottomNav';
 import Customizer from './shared/customizer/Customizer';
 import Navigation from '../full/horizontal/navbar/Navigation';
 import HorizontalHeader from '../full/horizontal/header/Header';
@@ -18,7 +19,7 @@ const MainWrapper = styled('div')(() => ({
 const PageWrapper = styled('div')(() => ({
   display: 'flex',
   flexGrow: 1,
-  paddingBottom: '60px',
+  paddingBottom: '84px',
   flexDirection: 'column',
   zIndex: 1,
   width: '100%',
@@ -31,7 +32,9 @@ const FullLayout: FC = () => {
   const theme = useTheme();
 
   return (
-    <MainWrapper className={customizer.activeMode !== 'light' ? 'darkbg mainwrapper' : 'mainwrapper'}>
+    <MainWrapper
+      className={customizer.activeMode !== 'light' ? 'darkbg mainwrapper' : 'mainwrapper'}
+    >
       {/* ------------------------------------------- */}
       {/* Sidebar */}
       {/* ------------------------------------------- */}
@@ -55,7 +58,8 @@ const FullLayout: FC = () => {
         {customizer.isHorizontal ? <Navigation /> : ''}
         <Container
           sx={{
-            pt: '30px',
+            pt: { xs: '16px', lg: '30px' },
+            px: { xs: '12px !important', sm: '24px !important' },
             maxWidth: customizer.isLayout === 'boxed' ? 'lg' : '100%!important',
           }}
         >
@@ -72,6 +76,7 @@ const FullLayout: FC = () => {
           {/* ------------------------------------------- */}
         </Container>
         <Customizer />
+        <BottomNav />
       </PageWrapper>
     </MainWrapper>
   );

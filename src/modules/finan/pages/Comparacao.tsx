@@ -101,7 +101,7 @@ const Comparacao = () => {
 
   return (
     <PageContainer title="Comparação · Finan">
-      <Stack spacing={3}>
+      <Stack spacing={{ xs: 1.5, sm: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center">
           <SeletorMes
             rotulo="Primeiro mês"

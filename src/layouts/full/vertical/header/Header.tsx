@@ -37,6 +37,7 @@ const Header = () => {
         {/* Toggle Button Sidebar */}
         {/* ------------------------------------------- */}
         <IconButton
+          sx={{ display: { xs: 'none', lg: 'inline-flex' } }}
           color="inherit"
           aria-label="menu"
           onClick={lgUp ? () => dispatch(toggleSidebar()) : () => dispatch(toggleMobileSidebar())}
@@ -57,8 +58,8 @@ const Header = () => {
                   customizer.activeMode === 'light'
                     ? 'dark'
                     : customizer.activeMode === 'dark'
-                    ? 'nu'
-                    : 'light',
+                      ? 'nu'
+                      : 'light',
                 ),
               )
             }

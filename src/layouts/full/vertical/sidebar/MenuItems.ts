@@ -23,6 +23,7 @@ import {
   IconTargetArrow,
   IconTags,
   IconRepeat,
+  IconPigMoney,
 } from '@tabler/icons-react';
 
 const Menuitems: MenuitemsType[] = [
@@ -61,6 +62,12 @@ const Menuitems: MenuitemsType[] = [
   {
     navlabel: true,
     subheader: 'Planejamento',
+  },
+  {
+    id: uniqueId(),
+    title: 'Caixinha',
+    icon: IconPigMoney,
+    href: '/finan/caixinha',
   },
   {
     id: uniqueId(),
