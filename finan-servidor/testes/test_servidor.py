@@ -36,7 +36,8 @@ class TestPrevisao(unittest.TestCase):
         self.assertEqual((resultado["mes"], resultado["total"]), ("2026-05", 70))
 
     def test_remover_regra_desfaz_regra_da_descricao(self):
-        regras = {"transacoes": {"1": "A"}, "faixas": {"x": {}}, "descricoes": {"x": "B"}}
+        regras = {**fin.regras_vazias(), "transacoes": {"1": "A"}, "faixas": {"x": {}},
+                  "descricoes": {"x": "B"}}
         fin.remover_regra(regras, {"id": "1", "chave": "x"})
         self.assertEqual(regras, fin.regras_vazias())
 
@@ -89,7 +90,8 @@ class TestApi(unittest.TestCase):
         for nome, arquivo in (("ARQUIVO_HISTORICO", banco),
                               ("ARQUIVO_REGRAS", os.path.join(pasta.name, "r.json")),
                               ("ARQUIVO_ORCAMENTO", os.path.join(pasta.name, "o.json")),
-                              ("ARQUIVO_ASSINATURAS", os.path.join(pasta.name, "a.json"))):
+                              ("ARQUIVO_ASSINATURAS", os.path.join(pasta.name, "a.json")),
+                              ("ARQUIVO_CATEGORIAS", os.path.join(pasta.name, "c.json"))):
             mock.patch.object(servidor, nome, arquivo).start()
         self.http = servidor.Servidor(("127.0.0.1", 0),
                                       partial(servidor.Manipulador, directory=pasta.name))
@@ -106,6 +108,16 @@ class TestApi(unittest.TestCase):
         resposta = conexao.getresponse()
         conteudo = resposta.read()
         return resposta.status, json.loads(conteudo) if conteudo[:1] == b"{" else conteudo
+
+    def test_investimentos_ocultam_resgatados_e_encurtam_nome(self):
+        nome = "CDB - NU FINANCEIRA S.A. - SOCIEDADE DE CREDITO"
+        ativos, encerrados = servidor._investimentos({"investimentos": [
+            {"id": "a", "name": nome, "subtype": "CDB", "balance": 10},
+            {"id": "b", "name": nome, "subtype": "CDB", "balance": 0},
+            {"id": "c", "name": nome, "subtype": "CDB", "balance": 50}]})
+        self.assertEqual([i["id"] for i in ativos], ["c", "a"])
+        self.assertEqual(encerrados, 1)
+        self.assertEqual(ativos[0]["nome"], "CDB · NU FINANCEIRA S.A.")
 
     def test_painel_nao_expoe_segredo(self):
         with mock.patch.object(servidor, "CLIENT_SECRET", "segredo-teste"):
@@ -139,6 +151,65 @@ class TestApi(unittest.TestCase):
 
     def test_minimo_zero_e_aceito(self):
         self.assertEqual(self.pedir("GET", "/extrato?minimo=0")[0], 200)
+
+    def comparar_com_dois_meses(self, caminho):
+        with mock.patch.object(servidor.historico, "carregar", return_value=[
+                {**transacao("1", "2026-01-10", -100), "categoria": "A", "interno": False},
+                {**transacao("2", "2026-03-10", -150), "categoria": "A", "interno": False},
+        ]), mock.patch.object(servidor.fin, "aplicar_regras"):
+            return self.pedir("GET", caminho)
+
+    def test_comparar_devolve_calculo_e_analise_na_mesma_resposta(self):
+        status, dados = self.comparar_com_dois_meses("/comparar?primeiro=2026-01&segundo=2026-03")
+        self.assertEqual(status, 200)
+        self.assertEqual(dados["resumo"]["despesas"]["percentual"], 50)
+        self.assertTrue(dados["analise"]["leitura"])
+
+    def test_comparar_recusa_mes_igual_ou_sem_dados(self):
+        for consulta in ("primeiro=2026-01&segundo=2026-01", "primeiro=2026-01&segundo=2026-02",
+                         "primeiro=2026-01", "primeiro=x&segundo=y"):
+            self.assertEqual(self.comparar_com_dois_meses(f"/comparar?{consulta}")[0], 400)
+
+    def test_comparar_nao_grava_nada(self):
+        with mock.patch.object(servidor.fin, "gravar_json") as gravar, \
+             mock.patch.object(servidor.historico, "salvar") as salvar:
+            self.comparar_com_dois_meses("/comparar?primeiro=2026-01&segundo=2026-03")
+        gravar.assert_not_called()
+        salvar.assert_not_called()
+
+    def linhas_categorias(self):
+        return {l["categoria"]: l for l in self.pedir("GET", "/categorias")[1]["linhas"]}
+
+    def test_renomear_e_desfazer_categoria(self):
+        self.assertEqual(self.pedir("POST", "/categorias/renomear",
+                                    {"origem": "Mercado", "destino": "Casa"})[0], 200)
+        self.assertEqual(list(self.linhas_categorias()), ["Casa"])
+        t = self.pedir("GET", "/extrato")[1]["transacoes"][0]
+        self.assertEqual((t["categoria"], t["corrigida"]), ("Casa", False))
+        self.assertIn("Casa", self.pedir("GET", "/painel")[1]["categorias"])
+        self.pedir("POST", "/categorias/desfazer", {"origem": "Mercado"})
+        self.assertEqual(list(self.linhas_categorias()), ["Mercado"])
+
+    def test_criar_aparece_no_painel_e_exclui(self):
+        self.assertEqual(self.pedir("POST", "/categorias/criar", {"nome": "  Pets  "})[0], 200)
+        self.assertIn("Pets", self.pedir("GET", "/painel")[1]["categorias"])
+        self.assertEqual(self.pedir("POST", "/categorias/criar", {"nome": "Pets"})[0], 400)
+        self.pedir("POST", "/categorias/excluir", {"nome": "Pets"})
+        self.assertNotIn("Pets", self.linhas_categorias())
+
+    def test_nome_invalido_nao_grava_nada(self):
+        self.assertEqual(self.pedir("POST", "/categorias/criar", {"nome": ""})[0], 400)
+        self.assertFalse(os.path.exists(servidor.ARQUIVO_CATEGORIAS))
+
+    def test_remover_regra_salva(self):
+        self.pedir("POST", "/regra", {"id": "1", "categoria": "Lazer", "todas": True})
+        regra = self.pedir("GET", "/categorias")[1]["regras"][0]
+        self.pedir("POST", "/categorias/regra/remover",
+                   {"tipo": regra["tipo"], "chave": regra["chave"]})
+        self.assertEqual(self.pedir("GET", "/categorias")[1]["regras"], [])
+
+    def test_periodo_invalido_em_categorias(self):
+        self.assertEqual(self.pedir("GET", "/categorias?periodo=x")[0], 400)
 
     def test_pedido_que_nao_e_objeto_recebe_resposta(self):
         self.assertEqual(self.pedir("POST", "/limite", [])[0], 400)

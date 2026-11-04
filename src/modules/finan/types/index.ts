@@ -7,6 +7,14 @@ export interface Conta {
   saldo: number;
 }
 
+export interface Investimento {
+  id: string;
+  nome: string;
+  tipo: string;
+  saldo: number;
+  data: string | null;
+}
+
 export interface ResumoCartao {
   fatura: number;
   limite: number;
@@ -69,10 +77,16 @@ export interface Painel {
   hoje: string;
   configurado: boolean;
   atualizado_em: string | null;
+  banco_lido_em: string | null;
+  proxima_leitura: string | null;
   tem_contas: boolean;
   em_conta: number;
   fatura: number;
   contas: Conta[];
+  investimentos: Investimento[];
+  investimentos_encerrados: number;
+  investido: number;
+  investimentos_status: 'ok' | 'vazio' | 'falhou' | null;
   cartao: ResumoCartao;
   faturas: Fatura[];
   mensal: Mes[];
@@ -132,4 +146,124 @@ export interface Comparacao {
   mes: string;
   anterior: string;
   linhas: { categoria: string; atual: number; anterior: number; diferenca: number }[];
+}
+
+export interface ValorComparado {
+  a: number;
+  b: number;
+  diferenca: number;
+  percentual: number | null;
+  rotulo: string | null;
+}
+
+export type SituacaoCategoria =
+  'Aumentou' | 'Diminuiu' | 'Permaneceu igual' | 'Nova categoria' | 'Sem movimentação';
+
+export interface CategoriaComparada extends ValorComparado {
+  categoria: string;
+  situacao: SituacaoCategoria;
+  ultimo_outro_mes: string | null;
+}
+
+export type TipoEvidencia = 'confirmado' | 'padrao' | 'tendencia' | 'estimativa' | 'insuficiente';
+
+export interface ItemAnalise {
+  tipo: TipoEvidencia;
+  titulo: string;
+  texto: string;
+  motivo?: string;
+}
+
+export interface Alerta {
+  titulo: string;
+  texto: string;
+  motivo: string;
+}
+
+export interface ItemTendencia extends ItemAnalise {
+  direcao: 'alta' | 'queda';
+  favoravel: boolean;
+}
+
+export interface Descoberta {
+  tipo: TipoEvidencia;
+  titulo: string;
+  explicacao: string;
+  valores: { rotulo: string; texto: string }[];
+  periodo: string;
+  motivo: string;
+}
+
+export interface AnaliseFinanceira {
+  base: { meses_fechados: number; despesas: number; periodo: string };
+  leitura: string[];
+  destaques: ItemAnalise[];
+  alertas: Alerta[];
+  padroes: ItemAnalise[];
+  tendencias: {
+    meses: number;
+    geral: ItemTendencia[];
+    alta: ItemTendencia[];
+    queda: ItemTendencia[];
+    estaveis: { categoria: string; media: number }[];
+  };
+  previsoes: ItemAnalise[];
+  descobertas: Descoberta[];
+  limitacoes: { tipo: TipoEvidencia; texto: string }[];
+}
+
+export interface ComparacaoMeses {
+  primeiro: string;
+  segundo: string;
+  resumo: { receitas: ValorComparado; despesas: ValorComparado; saldo: ValorComparado };
+  categorias: CategoriaComparada[];
+  aumentos: CategoriaComparada[];
+  reducoes: CategoriaComparada[];
+  um_periodo: {
+    categoria: string;
+    tipo: 'nova' | 'retomada' | 'so_primeiro';
+    valor: number;
+    ultimo_outro_mes: string | null;
+  }[];
+  evolucao: { mes: string; saidas: number }[];
+  em_andamento: {
+    mes: string;
+    outro: string;
+    dia: number;
+    dias_no_mes: number;
+    receitas: number;
+    despesas: number;
+    receitas_outro: number;
+    despesas_outro: number;
+  } | null;
+  analise: AnaliseFinanceira;
+}
+
+export interface LinhaCategoria {
+  categoria: string;
+  gastos: number;
+  entradas: number;
+  lancamentos: number;
+  fatia: number;
+  limite: number | null;
+  personalizada: boolean;
+  em_uso: boolean;
+  principais: { descricao: string; quantidade: number; total: number }[];
+}
+
+export interface RegraSalva {
+  tipo: 'descricao' | 'transacao' | 'faixa';
+  chave: string;
+  categoria: string;
+  descricao: string;
+  lancamentos: number;
+  minimo: number | null;
+}
+
+export interface PainelCategorias {
+  periodo: string;
+  total_gastos: number;
+  linhas: LinhaCategoria[];
+  regras: RegraSalva[];
+  renomeadas: { origem: string; destino: string }[];
 }

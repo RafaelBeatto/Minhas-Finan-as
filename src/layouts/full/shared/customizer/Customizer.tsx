@@ -151,6 +151,10 @@ const Customizer: FC = () => {
                 />
                 Dark
               </StyledBox>
+              <StyledBox onClick={() => dispatch(setDarkMode('nu'))} display="flex" gap={1}>
+                <DarkModeTwoToneIcon color={customizer.activeMode === 'nu' ? 'primary' : 'inherit'} />
+                Nu
+              </StyledBox>
             </Stack>
 
             <Box pt={3} />

@@ -123,13 +123,56 @@ const baseDarkTheme = {
       hoverOpacity: 0.02,
       hover: '#333F55',
     },
-    divider: '#333F55',
+    divider: '#262626',
     background: {
-      default: '#171c23',
-      dark: '#171c23',
-      paper: '#171c23',
+      default: '#000000',
+      dark: '#000000',
+      paper: '#0d0d0d',
     },
   },
 };
 
-export { baseDarkTheme, baselightTheme };
+// Tema inspirado no Nubank: roxo #820AD1 sobre fundos roxo-escuros.
+const baseNuTheme = {
+  ...baseDarkTheme,
+  palette: {
+    ...baseDarkTheme.palette,
+    primary: {
+      main: '#A93FF0',
+      light: '#2E1146',
+      dark: '#820AD1',
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: '#D9A8FF',
+      light: '#2E1146',
+      dark: '#B77BEA',
+      contrastText: '#1a0830',
+    },
+    grey: {
+      100: '#2B1745',
+      200: '#3A2160',
+      300: '#8E75B0',
+      400: '#DCCCF0',
+      500: '#EBDFF8',
+      600: '#F6EFFC',
+    },
+    text: {
+      primary: '#F3E8FF',
+      secondary: '#B9A3D6',
+    },
+    action: {
+      disabledBackground: 'rgba(255,255,255,0.12)',
+      hoverOpacity: 0.02,
+      hover: '#2B1745',
+    },
+    divider: '#3A2160',
+    background: {
+      default: '#14001F',
+      dark: '#14001F',
+      paper: '#1E0A30',
+    },
+  },
+};
+
+export { baseDarkTheme, baselightTheme, baseNuTheme };

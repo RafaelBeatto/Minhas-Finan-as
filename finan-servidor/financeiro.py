@@ -141,7 +141,7 @@ def chave_regra(descricao):
 
 
 def regras_vazias():
-    return {"transacoes": {}, "faixas": {}, "descricoes": {}}
+    return {"transacoes": {}, "faixas": {}, "descricoes": {}, "renomeadas": {}}
 
 
 def _ler_json(caminho, vazio):
@@ -158,6 +158,10 @@ def _ler_json(caminho, vazio):
 
 def carregar_regras(caminho):
     return _ler_json(caminho, regras_vazias())
+
+
+def carregar_criadas(caminho):
+    return _ler_json(caminho, {"criadas": []})["criadas"]
 
 
 def carregar_orcamento(caminho):
@@ -196,12 +200,17 @@ def _categoria_da_faixa(t, regras):
 
 
 def aplicar_regras(transacoes, regras):
-    """A correção de uma transação vale mais que a faixa de valor e que a regra da descrição."""
+    """A correção de uma transação vale mais que a faixa de valor e que a regra da descrição.
+
+    Categoria renomeada troca de nome em tudo, inclusive na original: não conta como correção.
+    """
+    renomeadas = regras.get("renomeadas", {})
     for t in transacoes:
+        t["categoria_original"] = renomeadas.get(t["categoria_original"], t["categoria_original"])
         categoria = (regras["transacoes"].get(t["id"]) or _categoria_da_faixa(t, regras)
                      or regras["descricoes"].get(t["chave"]))
         if categoria:
-            t["categoria"] = categoria
+            t["categoria"] = renomeadas.get(categoria, categoria)
             t["interno"] = categoria == INTERNO
         else:
             t["categoria"] = t["categoria_original"]

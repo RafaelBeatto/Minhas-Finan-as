@@ -6,7 +6,7 @@ import {
   toggleMobileSidebar,
   setDarkMode,
 } from 'src/store/customizer/CustomizerSlice';
-import { IconMenu2, IconMoon, IconSun } from '@tabler/icons-react';
+import { IconMenu2, IconMoon, IconPalette, IconSun } from '@tabler/icons-react';
 import { AppState } from 'src/store/Store';
 
 const Header = () => {
@@ -46,11 +46,29 @@ const Header = () => {
 
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
-          <IconButton size="large" color="inherit">
+          {/* Alterna: claro → escuro (preto) → Nu (roxo) → claro */}
+          <IconButton
+            size="large"
+            color="inherit"
+            aria-label="Alternar tema"
+            onClick={() =>
+              dispatch(
+                setDarkMode(
+                  customizer.activeMode === 'light'
+                    ? 'dark'
+                    : customizer.activeMode === 'dark'
+                    ? 'nu'
+                    : 'light',
+                ),
+              )
+            }
+          >
             {customizer.activeMode === 'light' ? (
-              <IconMoon size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('dark'))} />
+              <IconMoon size="21" stroke="1.5" />
+            ) : customizer.activeMode === 'dark' ? (
+              <IconPalette size="21" stroke="1.5" />
             ) : (
-              <IconSun size="21" stroke="1.5" onClick={() => dispatch(setDarkMode('light'))} />
+              <IconSun size="21" stroke="1.5" />
             )}
           </IconButton>
         </Stack>

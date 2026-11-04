@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 interface StateType {
   activeDir?: string | any;
-  activeMode?: string; // This can be light or dark
+  activeMode?: string; // light | dark | nu
   activeTheme?: string; // BLUE_THEME, GREEN_THEME, BLACK_THEME, PURPLE_THEME, ORANGE_THEME
   SidebarWidth?: number;
   MiniSidebarWidth?: number;
@@ -19,7 +19,7 @@ interface StateType {
 
 const initialState: StateType = {
   activeDir: 'ltr',
-  activeMode: 'light', // This can be light or dark
+  activeMode: 'light', // light | dark | nu
   activeTheme: 'BLUE_THEME', // BLUE_THEME, GREEN_THEME, BLACK_THEME, PURPLE_THEME, ORANGE_THEME
   SidebarWidth: 270,
   MiniSidebarWidth: 87,

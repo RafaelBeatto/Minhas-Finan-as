@@ -31,7 +31,7 @@ const FullLayout: FC = () => {
   const theme = useTheme();
 
   return (
-    <MainWrapper className={customizer.activeMode === 'dark' ? 'darkbg mainwrapper' : 'mainwrapper'}>
+    <MainWrapper className={customizer.activeMode !== 'light' ? 'darkbg mainwrapper' : 'mainwrapper'}>
       {/* ------------------------------------------- */}
       {/* Sidebar */}
       {/* ------------------------------------------- */}

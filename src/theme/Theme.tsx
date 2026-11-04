@@ -8,19 +8,22 @@ import typography from './Typography';
 import { shadows, darkshadows } from './Shadows';
 import { DarkThemeColors } from './DarkThemeColors';
 import { LightThemeColors } from './LightThemeColors';
-import { baseDarkTheme, baselightTheme } from './DefaultColors';
+import { baseDarkTheme, baselightTheme, baseNuTheme } from './DefaultColors';
 import * as locales from '@mui/material/locale';
 
 export const BuildTheme = (config: any = {}) => {
   const themeOptions = LightThemeColors.find((theme) => theme.name === config.theme);
   const darkthemeOptions = DarkThemeColors.find((theme) => theme.name === config.theme);
   const customizer = useSelector((state: AppState) => state.customizer);
-  const defaultTheme = customizer.activeMode === 'dark' ? baseDarkTheme : baselightTheme;
-  const defaultShadow = customizer.activeMode === 'dark' ? darkshadows : shadows;
-  const themeSelect = customizer.activeMode === 'dark' ? darkthemeOptions : themeOptions;
+  const isNu = customizer.activeMode === 'nu';
+  const isDark = customizer.activeMode === 'dark' || isNu;
+  const defaultTheme = isNu ? baseNuTheme : isDark ? baseDarkTheme : baselightTheme;
+  const defaultShadow = isDark ? darkshadows : shadows;
+  // O tema Nu usa a própria paleta; não deixa a cor do tema escuro sobrescrevê-la.
+  const themeSelect = isNu ? undefined : isDark ? darkthemeOptions : themeOptions;
   const baseMode = {
     palette: {
-      mode: customizer.activeMode,
+      mode: isDark ? 'dark' : 'light',
     },
     shape: {
       borderRadius: customizer.borderRadius,

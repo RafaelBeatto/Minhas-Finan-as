@@ -16,6 +16,7 @@ import { Painel } from '../types';
 const HORAS_DADO_VELHO = 6;
 const CHAVE_OCULTAR = 'finan.ocultar';
 const OCULTO = 'R$ ••••';
+const REAIS_NO_TEXTO = /[+-]?\s?R\$\s?[\d.]+(,\d+)?/g;
 
 interface ContextoFinan {
   painel: Painel | null;
@@ -26,6 +27,8 @@ interface ContextoFinan {
   ocultar: boolean;
   alternarOcultar: () => void;
   moeda: (valor: number) => string;
+  diferenca: (valor: number) => string;
+  ocultavel: (texto: string) => string;
   recarregar: () => Promise<void>;
   atualizar: () => Promise<void>;
   limparMensagens: () => void;
@@ -109,6 +112,9 @@ export const FinanProvider = ({ children }: { children: ReactNode }) => {
       ocultar,
       alternarOcultar,
       moeda: (numero: number) => (ocultar ? OCULTO : brl(numero)),
+      diferenca: (numero: number) => (ocultar ? OCULTO : `${numero > 0 ? '+' : ''}${brl(numero)}`),
+      // Textos prontos do servidor citam valores: também somem quando o usuário oculta.
+      ocultavel: (texto: string) => (ocultar ? texto.replace(REAIS_NO_TEXTO, OCULTO) : texto),
       recarregar,
       atualizar,
       limparMensagens: () => {

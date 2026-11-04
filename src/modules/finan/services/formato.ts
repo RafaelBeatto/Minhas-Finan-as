@@ -2,9 +2,15 @@ import dayjs from 'dayjs';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const REAIS = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const PERCENTUAL = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
 
 export const brl = (valor: number) => REAIS.format(valor);
 export const porcento = (valor: number) => `${Math.round(valor * 100)}%`;
+/** Percentual em escala de 0 a 100, com sinal; sem base mostra o rótulo do servidor. */
+export const variacao = (linha: { percentual: number | null; rotulo: string | null }) => {
+  if (linha.percentual === null) return linha.rotulo ?? '—';
+  return `${linha.percentual > 0 ? '+' : ''}${PERCENTUAL.format(linha.percentual)}%`;
+};
 export const dataBr = (data?: string | null) => (data ? dayjs(data).format('DD/MM/YYYY') : '—');
 export const dataHoraBr = (data: string) => dayjs(data).format('DD/MM/YYYY [às] HH:mm');
 
@@ -21,5 +27,8 @@ export const nomeMes = (mes: string) => {
 };
 
 /** Texto curto para o eixo dos gráficos: R$ 12 mil. */
+export const brlEixo = (valor: number) =>
+  Math.abs(valor) >= 1000 ? `R$ ${PERCENTUAL.format(valor / 1000)} mil` : `R$ ${Math.round(valor)}`;
+
 export const brlCurto = (valor: number) =>
   Math.abs(valor) >= 1000 ? `R$ ${Math.round(valor / 1000)} mil` : `R$ ${Math.round(valor)}`;

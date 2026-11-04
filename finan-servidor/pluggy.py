@@ -6,6 +6,7 @@ import historico
 
 BASE_URL = "https://api.pluggy.ai"
 CAMPOS_CONTA = ("id", "name", "number", "type", "balance", "creditData")
+CAMPOS_INVESTIMENTO = ("id", "name", "type", "subtype", "balance", "status", "date")
 
 
 def mensagem_erro(e):
@@ -68,6 +69,27 @@ def _buscar_faturas(accounts, headers):
         return None
 
 
+def _buscar_investimentos(item_id, headers):
+    """Caixinhas e aplicações. None indica falha (plano ou conector sem o produto)."""
+    try:
+        encontrados = _todas_paginas("/investments", {"itemId": item_id}, headers)
+    except requests.RequestException:
+        return None
+    return [{c: i.get(c) for c in CAMPOS_INVESTIMENTO} for i in encontrados]
+
+
+def _leitura_do_banco(item_id, headers):
+    """Quando a Pluggy leu o banco de verdade; sem resposta, valem as datas já salvas."""
+    try:
+        response = requests.get(f"{BASE_URL}/items/{item_id}", headers=headers, timeout=30)
+        response.raise_for_status()
+        item = response.json()
+    except requests.RequestException:
+        return {}
+    datas = {"banco_lido_em": item.get("lastUpdatedAt"), "proxima_leitura": item.get("nextAutoSyncAt")}
+    return {chave: valor for chave, valor in datas.items() if valor}
+
+
 def sincronizar(client_id, client_secret, item_id, arquivo):
     """Grava contas e transações no banco. Devolve um aviso se só as contas vieram."""
     auth = requests.post(f"{BASE_URL}/auth",
@@ -81,7 +103,8 @@ def sincronizar(client_id, client_secret, item_id, arquivo):
     accounts = payload.get("results", payload if isinstance(payload, list) else [])
     contas = [{c: a.get(c) for c in CAMPOS_CONTA} for a in accounts]
     agora = datetime.now().isoformat(timespec="seconds")
-    historico.salvar_instantaneo(arquivo, {"contas": contas, "atualizado_em": agora})
+    historico.salvar_instantaneo(arquivo, {"contas": contas, "atualizado_em": agora,
+                                           **_leitura_do_banco(item_id, headers)})
     try:
         categorias = _buscar_categorias(headers)
         for conta in accounts:
@@ -95,6 +118,12 @@ def sincronizar(client_id, client_secret, item_id, arquivo):
         novos = {}
         if faturas is not None:
             novos["faturas"] = [fin.resumo_fatura(f) for f in faturas]
+        investimentos = _buscar_investimentos(item_id, headers)
+        if investimentos is None:
+            novos["investimentos_status"] = "falhou"  # as salvas continuam valendo
+        else:
+            novos["investimentos"] = investimentos
+            novos["investimentos_status"] = "ok" if investimentos else "vazio"
         if categorias:
             novos["categorias"] = sorted({c["nome"] for c in categorias.values()})
         historico.salvar_instantaneo(arquivo, novos)

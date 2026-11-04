@@ -19,9 +19,12 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 import requests
 from dotenv import load_dotenv
+import categorias
+import comparativo
 import exportar
 import financeiro as fin
 import historico
+import inteligencia
 import pluggy
 
 PORTA = int(os.getenv("FINAN_PORTA", "8766"))
@@ -34,6 +37,7 @@ ARQUIVO_HISTORICO = DADOS / "historico.db"
 ARQUIVO_REGRAS = DADOS / "regras.json"
 ARQUIVO_ORCAMENTO = DADOS / "orcamento.json"
 ARQUIVO_ASSINATURAS = DADOS / "assinaturas.json"
+ARQUIVO_CATEGORIAS = DADOS / "categorias.json"
 LOCAL = re.compile(r"(127\.0\.0\.1|localhost)(:\d+)?$")
 ORIGEM_LOCAL = re.compile(r"http://(127\.0\.0\.1|localhost)(:\d+)?$")
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -73,6 +77,28 @@ def _conta(a):
             "cartao": a.get("type") == "CREDIT", "saldo": float(a.get("balance") or 0)}
 
 
+def _investimento(i):
+    """O banco manda o nome jurídico ('CDB - NU FINANCEIRA S.A. - ...'): fica só o essencial."""
+    partes = (i.get("name") or "Investimento").split(" - ")
+    nome = f"{partes[0]} · {partes[1]}" if len(partes) > 1 else partes[0]
+    return {"id": i.get("id"), "nome": nome, "tipo": i.get("subtype") or i.get("type") or "",
+            "saldo": float(i.get("balance") or 0), "data": i.get("date")}
+
+
+def _investimentos(instantaneo):
+    """Posições resgatadas continuam vindo com saldo zero: contam à parte, não poluem a lista."""
+    todos = [_investimento(i) for i in instantaneo.get("investimentos", [])]
+    ativos = sorted((i for i in todos if i["saldo"] > 0), key=lambda i: -i["saldo"])
+    return ativos, len(todos) - len(ativos)
+
+
+def _nomes_de_categorias(instantaneo, transacoes):
+    renomeadas = fin.carregar_regras(ARQUIVO_REGRAS)["renomeadas"]
+    return sorted((set(instantaneo.get("categorias", [])) - set(renomeadas))
+                  | {t["categoria"] for t in transacoes} | {fin.INTERNO}
+                  | set(fin.carregar_criadas(ARQUIVO_CATEGORIAS)))
+
+
 def painel(_consulta):
     transacoes = _transacoes()
     hoje = date.today()
@@ -84,10 +110,17 @@ def painel(_consulta):
     assinaturas = fin.detectar_assinaturas(transacoes, hoje, ignoradas)
     abertas = fin.parcelas_abertas(transacoes, hoje)
     faturas = sorted(instantaneo.get("faturas", []), key=lambda f: f["vencimento"] or "", reverse=True)
+    investimentos, encerrados = _investimentos(instantaneo)
     return {
         "hoje": hoje.isoformat(),
+        "investimentos": investimentos,
+        "investimentos_encerrados": encerrados,
+        "investido": sum(i["saldo"] for i in investimentos),
+        "investimentos_status": instantaneo.get("investimentos_status"),
         "configurado": _configurado(),
         "atualizado_em": instantaneo.get("atualizado_em"),
+        "banco_lido_em": instantaneo.get("banco_lido_em"),
+        "proxima_leitura": instantaneo.get("proxima_leitura"),
         "tem_contas": bool(contas),
         "em_conta": em_conta,
         "fatura": fatura,
@@ -105,8 +138,7 @@ def painel(_consulta):
         "previsao": fin.previsao_mes(transacoes, hoje),
         "proximo_mes": fin.compromissos_proximo_mes(abertas, assinaturas, hoje),
         "nomes_contas": sorted({t["conta"] for t in transacoes}),
-        "categorias": sorted(set(instantaneo.get("categorias", []))
-                             | {t["categoria"] for t in transacoes} | {fin.INTERNO}),
+        "categorias": _nomes_de_categorias(instantaneo, transacoes),
         "periodos": fin.PERIODOS,
     }
 
@@ -160,6 +192,77 @@ def comparacao(consulta):
     return {"mes": mes, "anterior": fin.mes_anterior(mes), "linhas": [
         {"categoria": c, "atual": a, "anterior": b, "diferenca": d}
         for c, a, b, d in fin.comparar_categorias(_transacoes(), mes)]}
+
+
+def comparar_meses(consulta):
+    """Tudo de uma vez: as três visões da página usam esta mesma resposta."""
+    primeiro, segundo = consulta.get("primeiro", ""), consulta.get("segundo", "")
+    if primeiro == segundo:
+        raise ErroApi(400, "Escolha dois meses diferentes.")
+    transacoes = _transacoes()
+    hoje = date.today()
+    try:
+        resultado = comparativo.comparar(transacoes, primeiro, segundo, hoje)
+    except ValueError as e:
+        raise ErroApi(400, "Escolha meses com movimentações.") from e
+    analise = inteligencia.analisar(transacoes, resultado, hoje, _ignoradas())
+    return {**resultado, "analise": analise}
+
+
+def visao_categorias(consulta):
+    periodo = consulta.get("periodo") or fin.PERIODOS[0]
+    if periodo not in fin.PERIODOS:
+        raise ErroApi(400, "Período inválido.")
+    return categorias.visao(_transacoes(), fin.carregar_regras(ARQUIVO_REGRAS),
+                            fin.carregar_orcamento(ARQUIVO_ORCAMENTO),
+                            fin.carregar_criadas(ARQUIVO_CATEGORIAS), periodo, date.today())
+
+
+def _alterar_categorias(alteracao):
+    """Carrega e grava junto regras, limites e categorias criadas, uma alteração por vez."""
+    with gravando:
+        regras = fin.carregar_regras(ARQUIVO_REGRAS)
+        orcamento = fin.carregar_orcamento(ARQUIVO_ORCAMENTO)
+        criadas = fin.carregar_criadas(ARQUIVO_CATEGORIAS)
+        try:
+            alteracao(regras, orcamento, criadas)
+        except ValueError as e:
+            raise ErroApi(400, str(e)) from e
+        fin.gravar_json(regras, ARQUIVO_REGRAS)
+        fin.gravar_json(orcamento, ARQUIVO_ORCAMENTO)
+        fin.gravar_json({"criadas": criadas}, ARQUIVO_CATEGORIAS)
+    return {}
+
+
+def criar_categoria(corpo):
+    def alteracao(_regras, _orcamento, criadas):
+        nome = categorias.validar_nome(corpo.get("nome"))
+        if nome in categorias.nomes_ativos(_transacoes(), criadas):
+            raise ValueError("Já existe uma categoria com este nome.")
+        criadas.append(nome)
+    return _alterar_categorias(alteracao)
+
+
+def renomear_categoria(corpo):
+    return _alterar_categorias(lambda regras, orcamento, criadas: categorias.renomear(
+        _transacoes(), regras, orcamento, criadas, corpo.get("origem"), corpo.get("destino")))
+
+
+def excluir_categoria(corpo):
+    return _alterar_categorias(lambda regras, orcamento, criadas: categorias.excluir(
+        _transacoes(), regras, orcamento, criadas, corpo.get("nome")))
+
+
+def desfazer_renomeacao(corpo):
+    def alteracao(regras, _orcamento, _criadas):
+        if regras["renomeadas"].pop(corpo.get("origem"), None) is None:
+            raise ValueError("Esta alteração não existe mais.")
+    return _alterar_categorias(alteracao)
+
+
+def remover_regra_salva(corpo):
+    return _alterar_categorias(lambda regras, _orcamento, _criadas: categorias.remover_regra_salva(
+        regras, corpo.get("tipo"), corpo.get("chave")))
 
 
 def atualizar(_corpo):
@@ -242,10 +345,16 @@ def planilha():
     return saida.getvalue(), f"financeiro_{hoje.isoformat()}.xlsx"
 
 
-LEITURAS = {"/servidor": identificar, "/painel": painel, "/extrato": extrato, "/comparacao": comparacao}
+LEITURAS = {"/servidor": identificar, "/painel": painel, "/extrato": extrato,
+            "/comparacao": comparacao, "/comparar": comparar_meses,
+            "/categorias": visao_categorias}
 ESCRITAS = {"/atualizar": atualizar, "/regra": salvar_regra, "/regra/remover": remover_regra,
             "/limite": salvar_limite, "/assinaturas/ignorar": ignorar_assinatura,
-            "/assinaturas/restaurar": restaurar_assinaturas}
+            "/assinaturas/restaurar": restaurar_assinaturas,
+            "/categorias/criar": criar_categoria, "/categorias/renomear": renomear_categoria,
+            "/categorias/excluir": excluir_categoria,
+            "/categorias/desfazer": desfazer_renomeacao,
+            "/categorias/regra/remover": remover_regra_salva}
 
 
 class Servidor(ThreadingHTTPServer):

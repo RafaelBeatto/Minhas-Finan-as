@@ -1,4 +1,5 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
+import { Outlet } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -6,8 +7,6 @@ import {
   CircularProgress,
   IconButton,
   Stack,
-  Tab,
-  Tabs,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -16,23 +15,21 @@ import { FinanProvider, useFinan } from '../hooks/useFinan';
 import { ENDERECO_PLANILHA } from '../services/api';
 import { dataHoraBr } from '../services/formato';
 
-const ABAS = [
-  { rotulo: 'Visão geral', href: '/finan' },
-  { rotulo: 'Extrato', href: '/finan/extrato' },
-  { rotulo: 'Histórico', href: '/finan/historico' },
-  { rotulo: 'Cartão', href: '/finan/cartao' },
-  { rotulo: 'Orçamento', href: '/finan/orcamento' },
-  { rotulo: 'Assinaturas', href: '/finan/assinaturas' },
-];
-
 const Conteudo = () => {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
   const { painel, erro, aviso, atualizando, atualizar, ocultar, alternarOcultar, limparMensagens } =
     useFinan();
-  const atualizadoEm = painel?.atualizado_em
+  const consultaEm = painel?.atualizado_em
     ? `Saldos de ${dataHoraBr(painel.atualizado_em)}`
     : 'Saldos ainda não atualizados';
+  // Atualizar só copia o que a Pluggy guardou: a data que importa é a da leitura do banco.
+  const proxima = painel?.proxima_leitura;
+  const atualizadoEm = painel?.banco_lido_em
+    ? `Banco lido em ${dataHoraBr(painel.banco_lido_em)}${
+        proxima && dayjs(proxima).isAfter(dayjs())
+          ? ` · próxima leitura em ${dataHoraBr(proxima)}`
+          : ''
+      }`
+    : consultaEm;
 
   return (
     <Box>
@@ -97,18 +94,6 @@ const Conteudo = () => {
           disponível.
         </Alert>
       )}
-
-      <Tabs
-        value={ABAS.some((a) => a.href === pathname) ? pathname : false}
-        onChange={(_, destino) => navigate(destino)}
-        variant="scrollable"
-        allowScrollButtonsMobile
-        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
-      >
-        {ABAS.map((a) => (
-          <Tab key={a.href} label={a.rotulo} value={a.href} />
-        ))}
-      </Tabs>
 
       {painel ? (
         <Outlet />

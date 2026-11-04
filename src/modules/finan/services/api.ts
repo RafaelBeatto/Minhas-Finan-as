@@ -1,4 +1,11 @@
-import { Comparacao, Extrato, FiltrosExtrato, Painel } from '../types';
+import {
+  Comparacao,
+  ComparacaoMeses,
+  Extrato,
+  FiltrosExtrato,
+  Painel,
+  PainelCategorias,
+} from '../types';
 
 const BASE = '/api/finan';
 const DESLIGADO =
@@ -36,6 +43,8 @@ export const buscarPainel = () => pedir<Painel>('/painel');
 export const buscarExtrato = (filtros: FiltrosExtrato) =>
   pedir<Extrato>(`/extrato?${consulta(filtros)}`);
 export const buscarComparacao = (mes: string) => pedir<Comparacao>(`/comparacao?mes=${mes}`);
+export const compararMeses = (primeiro: string, segundo: string) =>
+  pedir<ComparacaoMeses>(`/comparar?${consulta({ primeiro, segundo })}`);
 export const atualizarDados = () => enviar<{ aviso: string | null }>('/atualizar');
 export const salvarRegra = (id: string, categoria: string, todas: boolean) =>
   enviar('/regra', { id, categoria, todas });
@@ -44,4 +53,13 @@ export const salvarLimite = (categoria: string, valor: string) =>
   enviar('/limite', { categoria, valor });
 export const ignorarAssinatura = (chave: string) => enviar('/assinaturas/ignorar', { chave });
 export const restaurarAssinaturas = () => enviar('/assinaturas/restaurar');
+export const buscarCategorias = (periodo: string) =>
+  pedir<PainelCategorias>(`/categorias?${consulta({ periodo })}`);
+export const criarCategoria = (nome: string) => enviar('/categorias/criar', { nome });
+export const renomearCategoria = (origem: string, destino: string) =>
+  enviar('/categorias/renomear', { origem, destino });
+export const excluirCategoria = (nome: string) => enviar('/categorias/excluir', { nome });
+export const desfazerRenomeacao = (origem: string) => enviar('/categorias/desfazer', { origem });
+export const removerRegraSalva = (tipo: string, chave: string) =>
+  enviar('/categorias/regra/remover', { tipo, chave });
 export const ENDERECO_PLANILHA = `${BASE}/exportar`;
